@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTESPL · Engineer Incentive Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090d;--surface:#0d1318;--s2:#111a24;--s3:#162030;--s4:#1c2a3a;
+  --border:#1a2d42;--border2:#223549;
+  --c1:#00c2ff;--c2:#00e5a0;--c3:#ffb800;--c4:#ff5c5c;--c5:#b57cfb;--c6:#ff7eb3;
+  --text:#ddeaf7;--dim:#7a9ab8;--muted:#2e4a63;
+  --f1:'Rajdhani',sans-serif;--f2:'IBM Plex Sans',sans-serif;--f3:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--f2);font-size:13.5px;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,194,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,194,255,.02) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0;}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(7,9,13,.95);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;height:54px;gap:0;}
+.logo{font-family:var(--f1);font-size:18px;font-weight:700;color:var(--c1);letter-spacing:.05em;margin-right:32px;white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--c1);box-shadow:0 0 8px var(--c1);}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background .3s;flex-shrink:0;}
+.sync-dot.ok{background:var(--c2);box-shadow:0 0 6px var(--c2);}
+.sync-dot.err{background:var(--c4);}
+.sync-dot.syncing{background:var(--c3);animation:pulse .7s infinite alternate;}
+@keyframes pulse{from{opacity:.4}to{opacity:1}}
+.sync-label{font-family:var(--f3);font-size:10px;color:var(--muted);letter-spacing:.06em;}
+.tabs{display:flex;gap:2px;overflow-x:auto;}
+.tab{font-family:var(--f3);font-size:11px;letter-spacing:.07em;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;border:none;background:transparent;color:var(--dim);transition:all .18s;white-space:nowrap;}
+.tab:hover{color:var(--text);background:var(--s2);}
+.tab.active{color:var(--c1);background:rgba(0,194,255,.1);}
+.tab.daily-tab.active{color:var(--c2);background:rgba(0,229,160,.1);}
+.nav-r{margin-left:auto;display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.btn{font-family:var(--f3);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 14px;border-radius:6px;border:1px solid;cursor:pointer;transition:all .18s;white-space:nowrap;}
+.btn-p{background:rgba(0,194,255,.1);color:var(--c1);border-color:rgba(0,194,255,.3);}
+.btn-p:hover{background:rgba(0,194,255,.18);}
+.btn-g2{background:rgba(0,229,160,.1);color:var(--c2);border-color:rgba(0,229,160,.3);}
+.btn-g2:hover{background:rgba(0,229,160,.18);}
+.btn-s{background:transparent;color:var(--dim);border-color:var(--border2);}
+.btn-s:hover{color:var(--text);background:var(--s2);}
+.btn-d{background:rgba(255,92,92,.1);color:var(--c4);border-color:rgba(255,92,92,.25);}
+.btn-d:hover{background:rgba(255,92,92,.18);}
+.btn-warn{background:rgba(255,184,0,.1);color:var(--c3);border-color:rgba(255,184,0,.3);}
+.btn-warn:hover{background:rgba(255,184,0,.18);}
+
+/* SETUP BANNER */
+.setup-banner{background:linear-gradient(135deg,rgba(0,194,255,.08),rgba(181,124,251,.08));border:1px solid rgba(0,194,255,.2);border-radius:12px;padding:28px 32px;margin-bottom:28px;}
+.setup-banner h2{font-family:var(--f1);font-size:22px;font-weight:700;color:var(--c1);margin-bottom:6px;}
+.setup-banner p{color:var(--dim);font-size:13px;line-height:1.7;margin-bottom:16px;}
+.setup-step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);}
+.setup-step:last-of-type{border-bottom:none;}
+.step-num{width:26px;height:26px;border-radius:50%;background:rgba(0,194,255,.15);color:var(--c1);border:1px solid rgba(0,194,255,.3);display:flex;align-items:center;justify-content:center;font-family:var(--f3);font-size:11px;font-weight:500;flex-shrink:0;margin-top:2px;}
+.step-text{font-size:13px;color:var(--text);line-height:1.6;}
+.step-text code{font-family:var(--f3);background:var(--s3);border:1px solid var(--border2);border-radius:4px;padding:1px 7px;font-size:11.5px;color:var(--c2);}
+.url-input-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+.url-input-row input{flex:1;min-width:280px;font-family:var(--f3);font-size:12px;}
+
+/* PAGES */
+.page{display:none;position:relative;z-index:1;}
+.page.active{display:block;}
+.wrap{max-width:1280px;margin:0 auto;padding:28px;}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:24px;}
+.pt{font-family:var(--f1);font-size:24px;font-weight:700;letter-spacing:.03em;}
+.pt span{color:var(--c1);}
+.pt span.g{color:var(--c2);}
+.psub{font-size:12px;color:var(--dim);margin-top:3px;}
+select,input[type=text],input[type=number],input[type=date],input[type=url],textarea{background:var(--s2);color:var(--text);border:1px solid var(--border2);border-radius:7px;padding:7px 11px;font-family:var(--f2);font-size:13px;outline:none;transition:border-color .15s;}
+select:focus,input:focus,textarea:focus{border-color:var(--c1);}
+.row-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:24px;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;}
+.sc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.sc1::after{background:var(--c1)}.sc2::after{background:var(--c2)}.sc3::after{background:var(--c3)}.sc4::after{background:var(--c5)}
+.sc-label{font-family:var(--f3);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.sc-val{font-family:var(--f1);font-size:26px;font-weight:700;line-height:1;}
+.sc1 .sc-val{color:var(--c1)}.sc2 .sc-val{color:var(--c2)}.sc3 .sc-val{color:var(--c3)}.sc4 .sc-val{color:var(--c5)}
+.sc-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* TABLE */
+.tbox{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px;}
+table{width:100%;border-collapse:collapse;}
+th{font-family:var(--f3);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:10px 14px;text-align:left;background:var(--s2);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 14px;border-bottom:1px solid rgba(26,45,66,.45);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.erow{cursor:pointer;}
+.erow:hover td{background:rgba(0,194,255,.025);}
+.mono{font-family:var(--f3);}
+.en{font-weight:500;font-size:14px;}
+.eid{font-family:var(--f3);font-size:10px;color:var(--muted);}
+.amt{font-family:var(--f3);font-weight:500;color:var(--c2);}
+.pill{display:inline-block;font-family:var(--f3);font-size:10px;padding:2px 8px;border-radius:3px;letter-spacing:.04em;}
+.pg{background:rgba(0,229,160,.1);color:var(--c2);border:1px solid rgba(0,229,160,.2);}
+.pb{background:rgba(0,194,255,.1);color:var(--c1);border:1px solid rgba(0,194,255,.2);}
+.py{background:rgba(255,184,0,.1);color:var(--c3);border:1px solid rgba(255,184,0,.2);}
+.pr{background:rgba(255,92,92,.1);color:var(--c4);border:1px solid rgba(255,92,92,.2);}
+.pp{background:rgba(181,124,251,.1);color:var(--c5);border:1px solid rgba(181,124,251,.2);}
+.rank-b{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50%;font-family:var(--f3);font-size:11px;font-weight:500;}
+.rk1{background:rgba(255,184,0,.15);color:var(--c3);border:1px solid rgba(255,184,0,.3);}
+.rk2{background:rgba(181,124,251,.12);color:var(--c5);border:1px solid rgba(181,124,251,.25);}
+.rk3{background:rgba(0,229,160,.1);color:var(--c2);border:1px solid rgba(0,229,160,.2);}
+.rkn{background:var(--s3);color:var(--muted);border:1px solid var(--border);}
+
+/* ANNUAL */
+.ann-wrap{overflow-x:auto;}
+.ann-wrap table th,.ann-wrap table td{min-width:70px;font-size:11.5px;padding:9px 10px;}
+.ann-wrap table td.row-name{min-width:150px;font-weight:500;font-size:13px;}
+.ann-wrap table td.row-total{font-family:var(--f3);font-weight:500;color:var(--c3);font-size:13px;}
+.heat-0{color:var(--muted)}.heat-1{color:var(--dim)}.heat-2{color:var(--c1)}.heat-3{color:var(--c2)}.heat-4{color:var(--c3)}
+
+/* LEADERBOARD */
+.lb-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:16px;margin-bottom:10px;cursor:pointer;transition:border-color .18s;}
+.lb-item:hover{border-color:var(--border2);}
+.lb1{border-color:rgba(255,184,0,.35)!important;background:rgba(255,184,0,.04)!important;}
+.lb2{border-color:rgba(181,124,251,.25)!important;background:rgba(181,124,251,.03)!important;}
+.lb3{border-color:rgba(0,229,160,.2)!important;background:rgba(0,229,160,.03)!important;}
+.lb-rk{font-family:var(--f1);font-size:30px;font-weight:700;width:44px;text-align:center;flex-shrink:0;}
+.lb1 .lb-rk{color:var(--c3)}.lb2 .lb-rk{color:var(--c5)}.lb3 .lb-rk{color:var(--c2)}.lb-rk-n{color:var(--muted);}
+.lb-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--f1);font-size:16px;font-weight:700;flex-shrink:0;}
+.lb-inf{flex:1;}
+.lb-name{font-family:var(--f1);font-size:17px;font-weight:700;}
+.lb-meta{font-size:11.5px;color:var(--dim);margin-top:2px;}
+.lb-bars{flex:1;max-width:280px;}
+.lb-bg{background:var(--s3);border-radius:4px;height:6px;overflow:hidden;}
+.lb-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+.lb1 .lb-fill{background:var(--c3)}.lb2 .lb-fill{background:var(--c5)}.lb3 .lb-fill{background:var(--c2)}.lb-fill-n{background:var(--c1);}
+.lb-amt{font-family:var(--f3);font-size:16px;font-weight:500;color:var(--c2);white-space:nowrap;}
+.lb-breakdown{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;}
+.lb-chip{font-family:var(--f3);font-size:10px;color:var(--muted);}
+.lb-chip span{color:var(--dim);}
+
+/* DAILY FORM */
+.daily-form-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px;}
+.daily-form-card h3{font-family:var(--f1);font-size:18px;font-weight:700;letter-spacing:.03em;margin-bottom:18px;color:var(--c2);}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fgi{display:flex;flex-direction:column;gap:5px;}
+.fgi.full{grid-column:1/-1;}
+label{font-family:var(--f3);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}
+textarea{resize:vertical;min-height:56px;width:100%;}
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:4px;}
+.check-item{display:flex;align-items:flex-start;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;cursor:pointer;transition:border-color .15s;user-select:none;}
+.check-item:hover{border-color:var(--border2);}
+.check-item.checked{border-color:rgba(0,229,160,.35);background:rgba(0,229,160,.05);}
+.chk-box{width:16px;height:16px;border-radius:3px;border:1px solid var(--border2);background:var(--s3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:10px;}
+.check-item.checked .chk-box{background:rgba(0,229,160,.2);border-color:var(--c2);color:var(--c2);}
+.chk-label{font-size:12.5px;color:var(--dim);line-height:1.45;}
+.check-item.checked .chk-label{color:var(--text);}
+.form-section-head{font-family:var(--f3);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:18px 0 10px;display:flex;align-items:center;gap:10px;}
+.form-section-head::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;}
+.mh{padding:22px 26px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.mh h3{font-family:var(--f1);font-size:21px;font-weight:700;letter-spacing:.03em;}
+.mh-sub{font-size:12px;color:var(--dim);margin-top:3px;}
+.xbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;padding:2px 6px;border-radius:4px;transition:all .15s;line-height:1;}
+.xbtn:hover{color:var(--text);background:var(--s3);}
+.mb{padding:22px 26px;}
+.iprev{background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:16px 18px;margin-top:16px;}
+.iprev-head{font-family:var(--f3);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.ir{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(26,45,66,.4);font-size:12.5px;}
+.ir:last-of-type{border-bottom:none;}
+.ir .il{color:var(--dim);}
+.ir .iv{font-family:var(--f3);font-weight:500;color:var(--c2);}
+.itot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2);}
+.itot .tl{font-family:var(--f1);font-size:16px;font-weight:600;}
+.itot .tv{font-family:var(--f3);font-size:20px;font-weight:500;color:var(--c3);}
+.fa{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+
+/* DETAIL */
+.dc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.dc{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.dc-l{font-family:var(--f3);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.dc-v{font-family:var(--f1);font-size:20px;font-weight:700;}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:56px;margin:14px 0 6px;}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;}
+.bar-fill{width:100%;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s ease;}
+.bar-lbl{font-family:var(--f3);font-size:9px;color:var(--muted);}
+.eli{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:8px;}
+.eli:hover{border-color:var(--border2);}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--f1);font-size:16px;font-weight:700;flex-shrink:0;}
+.eli-inf{flex:1;}
+.eli-name{font-weight:500;font-size:14px;}
+.eli-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.eli-acts{display:flex;gap:8px;}
+.dl-checks-display{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;margin-top:10px;}
+.dl-chk-tag{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--dim);}
+.dl-chk-tag.done{border-color:rgba(0,229,160,.25);color:var(--text);}
+.dl-chk-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0;}
+.dl-chk-tag.done .dot{background:var(--c2);}
+
+/* LOADING SPINNER */
+.loading{text-align:center;padding:48px;color:var(--muted);}
+.spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--c1);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty{text-align:center;padding:52px 24px;color:var(--muted);}
+.empty-ico{font-size:38px;margin-bottom:12px;opacity:.45;}
+.empty p{font-size:14px;}
+.toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--s2);border:1px solid var(--border2);border-radius:8px;padding:12px 18px;font-size:13px;box-shadow:0 6px 28px rgba(0,0,0,.45);transform:translateY(70px);opacity:0;transition:all .28s ease;pointer-events:none;max-width:340px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{border-color:rgba(0,229,160,.35);}
+.toast.err{border-color:rgba(255,92,92,.35);}
+.toast.warn{border-color:rgba(255,184,0,.35);}
+
+@media(max-width:780px){
+  nav{padding:0 10px;height:auto;min-height:54px;flex-wrap:wrap;gap:6px;padding-top:8px;padding-bottom:8px;}
+  .logo{font-size:13px;margin-right:8px;}
+  .tabs{order:3;width:100%;overflow-x:auto;padding-bottom:4px;}
+  .tab{font-size:10px;padding:6px 10px;}
+  .nav-r{gap:5px;}
+  .nav-r .btn{font-size:10px;padding:5px 9px;}
+  .wrap{padding:12px;}.fg{grid-template-columns:1fr;}
+  .dc-grid{grid-template-columns:1fr 1fr;}
+  .stats{grid-template-columns:repeat(2,1fr);}
+  .lb-bars{display:none;}
+  .check-grid{grid-template-columns:1fr;}
+  .tbox{overflow-x:auto;}
+  table{min-width:600px;}
+  .ph{flex-direction:column;align-items:flex-start;}
+  .modal{max-height:96vh;margin:4px;}
+  .mh{padding:14px 16px 10px;}
+  .mb{padding:14px 16px;}
+  .iprev{padding:12px 14px;}
+  .daily-form-card{padding:16px;}
+  .ann-wrap table{min-width:900px;}
+  select,input[type=text],input[type=number],input[type=date],input[type=url],textarea{font-size:16px !important;} /* prevent iOS zoom */
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><div class="logo-dot"></div>PTESPL · ENGINEER PERFORMANCE DASHBOARD</div>
+  <div class="tabs">
+    <button class="tab active" onclick="goPage('dashboard',this)">Dashboard</button>
+    <button class="tab" onclick="goPage('annual',this)">Annual View</button>
+    <button class="tab" onclick="goPage('leaderboard',this)">Leaderboard</button>
+    <button class="tab daily-tab" onclick="goPage('daily',this)">Daily Log</button>
+    <button class="tab" onclick="goPage('engineers',this)">Team</button>
+    <button class="tab" onclick="goPage('setup',this)" style="color:var(--c3);">⚙ Setup</button>
+  </div>
+  <div class="nav-r">
+    <div class="sync-dot" id="syncDot" title="Sync status"></div>
+    <span class="sync-label" id="syncLabel">Not connected</span>
+    <button class="btn btn-p" onclick="openEntry()">+ Log Month</button>
+    <button class="btn btn-g2" onclick="goPageByName('daily')">+ Daily Log</button>
+    <button class="btn btn-s" onclick="openAddEng()">+ Engineer</button>
+  </div>
+</nav>
+
+<!-- ════ SETUP PAGE ════ -->
+<div class="page" id="page-setup">
+<div class="wrap">
+  <div class="ph">
+    <div><div class="pt">⚙ <span>Setup</span> Google Sheets</div><div class="psub">One-time configuration — takes about 5 minutes</div></div>
+  </div>
+  <div class="setup-banner">
+    <h2>Connect to Google Sheets</h2>
+    <p>Follow these steps once. After setup, all data saves automatically to your Google Sheet and can be viewed or edited by anyone you share it with — from any device.</p>
+
+    <div class="setup-step">
+      <div class="step-num">1</div>
+      <div class="step-text">Open <strong>Google Sheets</strong> and create a new blank spreadsheet. Name it <code>Ecolyser Incentive Tracker</code>.</div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">2</div>
+      <div class="step-text">In that sheet, click <code>Extensions</code> → <code>Apps Script</code>. A new tab opens with a code editor.</div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">3</div>
+      <div class="step-text">Delete everything in the editor. Open the <strong>google_apps_script_v4.js</strong> file you downloaded and paste its entire contents. Click <code>Save</code> (Ctrl+S). Name the project <code>PTTrack v4</code>.</div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">4</div>
+      <div class="step-text">Click <code>Deploy</code> → <code>New Deployment</code>. Set Type = <code>Web App</code>. Set Execute as = <code>Me</code>. Set Who has access = <code>Anyone</code>. Click <code>Deploy</code>. Google will ask you to authorise — click <strong>Allow</strong>.</div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">5</div>
+      <div class="step-text">Copy the <strong>Web App URL</strong> that appears (starts with <code>https://script.google.com/macros/s/...</code>). Paste it below and click <strong>Connect</strong>.</div>
+    </div>
+
+    <div class="url-input-row">
+      <input type="url" id="sheetUrl" placeholder="https://script.google.com/macros/s/YOUR_ID/exec" style="font-size:12px;">
+      <button class="btn btn-p" onclick="connectSheet()">Connect & Test</button>
+      <button class="btn btn-d" onclick="disconnectSheet()">Disconnect</button>
+    </div>
+    <div id="connectionStatus" style="margin-top:12px;font-size:12.5px;color:var(--dim);"></div>
+  </div>
+
+  <div style="background:rgba(255,92,92,.06);border:1px solid rgba(255,92,92,.2);border-radius:10px;padding:20px 24px;margin-bottom:20px;">
+    <div style="font-family:var(--f1);font-size:16px;font-weight:700;color:var(--c4);margin-bottom:10px;">🔌 Connection Not Working? — Most Common Fixes</div>
+    <div style="color:var(--dim);font-size:13px;line-height:2;">
+      <strong style="color:var(--text);">① Did you create a NEW deployment?</strong> — You must use <code style="font-family:var(--f3);background:var(--s3);border:1px solid var(--border2);border-radius:4px;padding:1px 7px;font-size:11.5px;color:var(--c2);">Deploy → New Deployment</code> each time you update the script. Editing an existing deployment does NOT update the live URL.<br>
+      <strong style="color:var(--text);">② "Who has access" must be set to "Anyone"</strong> — Not "Anyone with a Google Account". Open Apps Script → Deploy → Manage Deployments → Edit → fix this.<br>
+      <strong style="color:var(--text);">③ Did you click "Authorise"?</strong> — On first deploy, Google shows a permissions screen. You must click Allow. If you missed it, delete the deployment and redeploy.<br>
+      <strong style="color:var(--text);">④ Using the old URL?</strong> — Every new deployment gets a NEW URL. Paste the latest URL from Deploy → Manage Deployments here.<br>
+      <strong style="color:var(--text);">⑤ Still failing?</strong> — Open your Apps Script URL directly in a browser tab. If it shows JSON data, it's working. If it shows an error, the issue is in the script permissions.
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;">
+    <div style="font-family:var(--f1);font-size:16px;font-weight:700;margin-bottom:12px;">📝 After Connecting — How to Edit Data & Share Access</div>
+    <div style="color:var(--dim);font-size:13px;line-height:1.8;">
+      • Open your Google Sheet anytime from any device or browser<br>
+      • You will see 4 tabs: <strong style="color:var(--text)">Engineers</strong>, <strong style="color:var(--text)">Monthly Records</strong>, <strong style="color:var(--text)">Daily Logs</strong>, and <strong style="color:var(--text)">Sites</strong><br>
+      • Click any cell and edit directly — changes are saved instantly<br>
+      • Click <strong style="color:var(--c1)">🔄 Refresh</strong> in this tracker to reload the latest data<br>
+      <br>
+      <strong style="color:var(--c2)">🔗 Sharing this tracker with your team:</strong><br>
+      • This HTML file works as a standalone web app — host it on any web server, Google Drive (Publish to web), or share the file directly<br>
+      • Anyone with the file + the Google Apps Script URL can use it fully from any laptop or mobile<br>
+      • The Google Apps Script URL is set to <strong>"Who has access: Anyone"</strong> — this means anyone with the URL can read/write data to your sheet<br>
+      • To restrict access, change the deployment to "Anyone with Google Account" and team members sign in<br>
+      <br>
+      <strong style="color:var(--c3)">⚠ Important:</strong> The Google Apps Script Web App URL is the "key" to your data. Keep it within your team.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════ DASHBOARD ════ -->
+<div class="page active" id="page-dashboard">
+<div class="wrap">
+  <div class="ph">
+    <div><div class="pt">Monthly <span>Performance</span></div><div class="psub">Manager View · Ecolyser Field Operations</div></div>
+    <div class="row-filters">
+      <select id="dm" onchange="renderDash()">
+        <option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option>
+        <option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option>
+        <option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>
+      </select>
+      <select id="dy" onchange="renderDash()">
+        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+      </select>
+      <input type="text" id="dsearch" placeholder="Search…" style="width:150px;" oninput="renderDash()">
+      <button class="btn btn-s" onclick="loadFromSheet()" title="Refresh from Google Sheets">🔄 Refresh</button>
+    </div>
+  </div>
+  <div class="stats" id="dstats"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px;">
+    <button class="btn btn-s" onclick="exportCSV()">↓ Export CSV</button>
+  </div>
+  <div class="tbox">
+    <table>
+      <thead><tr>
+        <th>Rank</th><th>Engineer</th>
+        <th>Visits</th><th>Spares</th><th>OCEMS</th><th>Buyback</th><th>Install</th><th>Feedback</th><th>CMC</th>
+        <th>Total Earned</th><th></th>
+      </tr></thead>
+      <tbody id="dtbody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ════ ANNUAL ════ -->
+<div class="page" id="page-annual">
+<div class="wrap">
+  <div class="ph">
+    <div><div class="pt">Annual <span>Summary</span></div><div class="psub">Running totals per engineer across all months</div></div>
+    <div class="row-filters">
+      <select id="ay" onchange="renderAnnual()">
+        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+      </select>
+      <button class="btn btn-s" onclick="loadFromSheet()">🔄 Refresh</button>
+    </div>
+  </div>
+  <div class="stats" id="astats"></div>
+  <div class="ann-wrap tbox" id="annTable"></div>
+</div>
+</div>
+
+<!-- ════ LEADERBOARD ════ -->
+<div class="page" id="page-leaderboard">
+<div class="wrap">
+  <div class="ph">
+    <div><div class="pt">🏆 <span>Leaderboard</span></div><div class="psub">Ranked by total incentive earned</div></div>
+    <div class="row-filters">
+      <select id="lbp" onchange="renderLB()">
+        <option value="month">This Month</option>
+        <option value="year">This Year (YTD)</option>
+        <option value="all">All Time</option>
+      </select>
+      <select id="lbm" onchange="renderLB()">
+        <option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option>
+        <option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option>
+        <option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>
+      </select>
+      <select id="lby" onchange="renderLB()">
+        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+      </select>
+      <button class="btn btn-s" onclick="loadFromSheet()">🔄 Refresh</button>
+    </div>
+  </div>
+  <div id="lbList"></div>
+</div>
+</div>
+
+<!-- ════ DAILY LOG ════ -->
+<div class="page" id="page-daily">
+<div class="wrap">
+  <div class="ph">
+    <div><div class="pt">Daily <span class="g">Pre-Troubleshoot</span> Log</div><div class="psub">Record daily visit preparation — syncs to Google Sheets</div></div>
+    <div class="row-filters">
+      <input type="date" id="dl-filter-date" onchange="renderDailyTable()">
+      <select id="dl-filter-eng" onchange="renderDailyTable()">
+        <option value="">All Engineers</option>
+      </select>
+      <button class="btn btn-s" onclick="loadFromSheet()">🔄 Refresh</button>
+      <button class="btn btn-s" onclick="exportDailyCSV()">↓ Export CSV</button>
+    </div>
+  </div>
+  <div class="daily-form-card" id="dl-form-card">
+    <h3 id="dl-form-title">📋 New Daily Log Entry</h3>
+    <div id="dl-edit-banner" style="display:none;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.28);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--c3);display:none;align-items:center;gap:10px;">
+      ✏️ <span id="dl-edit-banner-text">Editing existing log</span> — update fields and click <strong>Update Log</strong>.
+      <button class="btn btn-s" style="font-size:10px;padding:3px 10px;margin-left:auto;" onclick="cancelDailyEdit()">✕ Cancel</button>
+    </div>
+    <div class="fg">
+      <div class="fgi"><label>Engineer</label><select id="dl-eng"></select></div>
+      <div class="fgi"><label>Visit Date</label><input type="date" id="dl-date"></div>
+      <div class="fgi"><label>Site / Client Name</label>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="dl-site" list="site-datalist" placeholder="Type or select a site…" style="flex:1;" autocomplete="off">
+          <datalist id="site-datalist"></datalist>
+          <button type="button" class="btn btn-g2" style="padding:7px 10px;font-size:10px;white-space:nowrap;" onclick="openSiteManager()" title="Manage site list">⚙ Sites</button>
+        </div>
+      </div>
+      <div class="fgi"><label>Visit Type</label>
+        <select id="dl-vtype">
+          <option value="scheduled">Scheduled Visit</option>
+          <option value="emergency">Emergency Visit</option>
+          <option value="installation">New Installation</option>
+          <option value="followup">Follow-up</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-section-head">Pre-Visit Preparation (3–4 Days Before)</div>
+    <div class="check-grid" id="pre-checks"></div>
+    <div class="form-section-head">On-Site Execution Checklist</div>
+    <div class="check-grid" id="onsite-checks"></div>
+    <div class="form-section-head">Post-Visit & Follow-Up</div>
+    <div class="check-grid" id="post-checks"></div>
+    <div class="fg" style="margin-top:18px;">
+      <div class="fgi full"><label>Spare Parts Required / Carried</label><input type="text" id="dl-spares" placeholder="e.g. Sensor board x1, Power cable x2"></div>
+      <div class="fgi full"><label>Issue Description / Remarks</label><textarea id="dl-notes" placeholder="Describe the site issue, actions taken…"></textarea></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;gap:10px;">
+      <button class="btn btn-s" onclick="resetDailyForm()">Reset</button>
+      <button class="btn btn-g2" id="dl-save-btn" onclick="saveDailyLog()">Save to Google Sheets</button>
+    </div>
+  </div>
+  <div class="tbox">
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Engineer</th><th>Site</th><th>Type</th>
+        <th>Pre</th><th>On-Site</th><th>Post</th>
+        <th>Spares</th><th>Notes</th><th></th>
+      </tr></thead>
+      <tbody id="dl-tbody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ════ TEAM ════ -->
+<div class="page" id="page-engineers">
+<div class="wrap">
+  <div class="ph">
+    <div><div class="pt">Team <span>Roster</span></div><div class="psub">Manage your service engineers (up to 15)</div></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-s" onclick="loadFromSheet()">🔄 Refresh</button>
+      <button class="btn btn-p" onclick="openAddEng()">+ Add Engineer</button>
+    </div>
+  </div>
+  <div id="engList"></div>
+</div>
+</div>
+
+<!-- ════ MONTHLY ENTRY MODAL ════ -->
+<div class="overlay" id="mo-entry">
+<div class="modal">
+  <div class="mh">
+    <div><h3>Log Monthly Data</h3><div class="mh-sub">Saves directly to Google Sheets · All fields auto-calculate incentive</div></div>
+    <button class="xbtn" onclick="closeM('mo-entry')">×</button>
+  </div>
+  <div class="mb">
+    <!-- Auto-fill notice shown when daily logs exist for this month -->
+    <div id="autofill-notice" style="display:none;background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--c2);line-height:1.6;"></div>
+    <div class="fg">
+      <div class="fgi"><label>Engineer</label><select id="eEng" onchange="prefillRec()"></select></div>
+      <div class="fgi"><label>Month</label>
+        <select id="eMon" onchange="prefillRec()">
+          <option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select>
+      </div>
+      <div class="fgi"><label>Year</label>
+        <select id="eYr" onchange="prefillRec()"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
+      </div>
+      <div class="fgi"><label>Emergency Visits This Month</label>
+        <select id="eEv" onchange="calcPrev()">
+          <option value="0">0 — None ✓ (eligible for quarterly bonus)</option>
+          <option value="1">1 — One used (50% quarterly credit)</option>
+          <option value="2">2 or more — ₹0 / disqualified</option>
+        </select>
+      </div>
+      <div class="fgi"><label>Sites Managed This Month <span style="font-size:10px;color:var(--muted);">(for ₹250/site quarterly calc)</span></label>
+        <input type="number" id="eSites" placeholder="e.g. 8 — number of sites managed" oninput="calcPrev()" min="0">
+      </div>
+      <div class="fgi"><label>Spare Sales — Payment Received (₹)</label><input type="number" id="eSp" placeholder="e.g. 800000" oninput="calcPrev()" min="0"></div>
+      <div class="fgi"><label>New OCEMS/STP Order Value (₹)</label><input type="number" id="eOc" placeholder="New client or existing — 1%" oninput="calcPrev()" min="0"></div>
+      <div class="fgi"><label>Buyback from Existing Client (₹)</label><input type="number" id="eBb" placeholder="0.05% commission" oninput="calcPrev()" min="0"></div>
+      <div class="fgi"><label>Installations Completed</label><input type="number" id="eIn" placeholder="e.g. 2 — ₹1,000 each" oninput="calcPrev()" min="0"></div>
+      <div class="fgi"><label>Positive Client Feedbacks (150+ words, official email)</label><input type="number" id="eFb" placeholder="e.g. 10" oninput="calcPrev()" min="0"></div>
+      <div class="fgi full"><label>CMC Site Management Efficiency (%)</label>
+        <select id="eCmc" onchange="calcPrev()">
+          <option value="95">90–100% — Outstanding → ₹1,000</option>
+          <option value="75">70–89% — Good → ₹700</option>
+          <option value="55">50–69% — Average → ₹500</option>
+          <option value="25">Below 50% — Poor → ₹0</option>
+        </select>
+      </div>
+      <div class="fgi full"><label>Manager Notes</label><textarea id="eNt" placeholder="Any remarks for this month…"></textarea></div>
+    </div>
+    <div class="iprev">
+      <div class="iprev-head">💰 Live Incentive Breakdown</div>
+      <div style="background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2);border-radius:7px;padding:9px 13px;margin-bottom:10px;font-size:11.5px;color:var(--c3);line-height:1.6;">
+        <strong>⏱ Component 01 — Visit Bonus is QUARTERLY.</strong> It is paid every quarter:<br>
+        <span style="font-family:var(--f3);font-size:10.5px;color:var(--dim);">Aug 2026 · Nov 2026 · Feb 2027 · May 2027 · Aug 2027 …</span><br>
+        <span style="font-size:11px;color:var(--muted);">₹250 per eligible site · Site disqualified if any emergency visit occurs.</span>
+      </div>
+      <div class="ir"><span class="il">01 · Visit Performance <span style="font-size:10px;color:var(--muted);">— <strong id="qtr-label" style="color:var(--c3);">Tracked Monthly · Paid Quarterly</strong></span></span><span class="iv" id="pv1">₹0</span></div>
+      <div class="ir"><span class="il">02 · Spare Sales Commission (1% flat)</span><span class="iv" id="pv2">₹0</span></div>
+      <div class="ir"><span class="il">03 · New OCEMS/STP Order (1%)</span><span class="iv" id="pv3">₹0</span></div>
+      <div class="ir"><span class="il">04 · Buyback Commission (0.05%)</span><span class="iv" id="pv4bb">₹0</span></div>
+      <div class="ir"><span class="il">05 · Installation (×₹1,000)</span><span class="iv" id="pv4">₹0</span></div>
+      <div class="ir"><span class="il">06 · Client Feedback</span><span class="iv" id="pv5">₹0</span></div>
+      <div class="ir"><span class="il">07 · CMC Management</span><span class="iv" id="pv6">₹0</span></div>
+      <div class="itot"><span class="tl">Total Incentive (this month)</span><span class="tv" id="pvt">₹0</span></div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-s" onclick="closeM('mo-entry')">Cancel</button>
+      <button class="btn btn-p" id="saveRecBtn" onclick="saveRec()">Save to Google Sheets</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ADD ENGINEER MODAL -->
+<div class="overlay" id="mo-eng">
+<div class="modal" style="max-width:420px;">
+  <div class="mh">
+    <div><h3>Add Engineer</h3><div class="mh-sub">Saves directly to Google Sheets</div></div>
+    <button class="xbtn" onclick="closeM('mo-eng')">×</button>
+  </div>
+  <div class="mb">
+    <div class="fg" style="grid-template-columns:1fr;">
+      <div class="fgi"><label>Full Name</label><input type="text" id="nName" placeholder="e.g. Rahul Sharma"></div>
+      <div class="fgi"><label>Employee ID</label><input type="text" id="nEid" placeholder="e.g. ENG-001"></div>
+      <div class="fgi"><label>Region / Zone</label><input type="text" id="nReg" placeholder="e.g. Mumbai West"></div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-s" onclick="closeM('mo-eng')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEng()">Add Engineer</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="mo-detail">
+<div class="modal" style="max-width:780px;">
+  <div class="mh">
+    <div><h3 id="det-name">Engineer Detail</h3><div class="mh-sub" id="det-meta"></div></div>
+    <button class="xbtn" onclick="closeM('mo-detail')">×</button>
+  </div>
+  <div class="mb" id="det-body"></div>
+</div>
+</div>
+
+<!-- DAILY DETAIL MODAL -->
+<div class="overlay" id="mo-dl-detail">
+<div class="modal" style="max-width:700px;">
+  <div class="mh">
+    <div><h3 id="dld-title">Log Detail</h3><div class="mh-sub" id="dld-meta"></div></div>
+    <button class="xbtn" onclick="closeM('mo-dl-detail')">×</button>
+  </div>
+  <div class="mb" id="dld-body"></div>
+  <div style="padding:0 26px 22px;display:flex;gap:10px;justify-content:flex-end;">
+    <button class="btn btn-warn" id="dld-edit-btn" onclick="editDailyLogFromDetail()">✏ Edit This Log</button>
+    <button class="btn btn-s" onclick="closeM('mo-dl-detail')">Close</button>
+  </div>
+</div>
+</div>
+
+<!-- SITE MANAGER MODAL -->
+<div class="overlay" id="mo-sites">
+<div class="modal" style="max-width:520px;">
+  <div class="mh">
+    <div><h3>Manage Site List</h3><div class="mh-sub">Sites are saved to Google Sheets and shared across the team</div></div>
+    <button class="xbtn" onclick="closeM('mo-sites')">×</button>
+  </div>
+  <div class="mb">
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <input type="text" id="new-site-input" placeholder="Enter new site / client name…" style="flex:1;" onkeydown="if(event.key==='Enter')addNewSite()">
+      <button class="btn btn-g2" onclick="addNewSite()">+ Add Site</button>
+    </div>
+    <div style="font-family:var(--f3);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
+      Saved Sites <span id="site-count" style="color:var(--c1);"></span>
+    </div>
+    <div id="site-list-container" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">
+      <button class="btn btn-s" onclick="closeM('mo-sites')">Done</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG — paste your Google Apps Script Web App URL here after setup
+// ═══════════════════════════════════════════════════════════════
+const URL_KEY = 'ecotrack_sheet_url';
+let SHEET_URL = localStorage.getItem(URL_KEY) || '';
+
+// ═══════════════════════════════════════════════════════════════
+// IN-MEMORY DATA STORE (loaded from Google Sheets on startup)
+// ═══════════════════════════════════════════════════════════════
+let DB = { engineers: [], records: [], daily: [], sites: [] };
+
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const MN  = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+const MN3 = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const COLS= ['#00c2ff','#00e5a0','#ffb800','#b57cfb','#ff7eb3','#ff5c5c','#4dc8ff','#39ffbe','#ffd166','#ef476f','#06d6a0','#118ab2','#ffd60a','#e63946','#8338ec'];
+const VTYPES = {scheduled:'Scheduled',emergency:'Emergency',installation:'Installation',followup:'Follow-up'};
+
+const PRE_CHECKS = [
+  'Diagnose site issue remotely (offline/sensor/connectivity)',
+  'Submit pre-troubleshoot list to backend team',
+  'Confirm spare requirements & arrange before visit',
+  'Verify internet connectivity with support coordinators',
+  'Confirm reason of site offline / sensor issue with backend',
+  'Check AMC/CMC payment status & pending dues',
+  'Check missing hardware or pending deliveries to client',
+  'Verify spares/hardware received by client or carried',
+  'Carry all required documents, tools & spares',
+  'No Reschedule visit',
+  
+];
+const ONSITE_CHECKS = [
+  'Accept & open tickets formally on arrival',
+  'Adhere to dress code & uniform policy',
+  'Educate client on issue cause & preventive measures',
+  'Fill detailed service report — all parameters noted',
+  'Obtain client signature & written feedback',
+  'Capture before & after service photos — share with backend',
+  'Provide calibration report to client & backend support',
+  'Complete service — check all PCB & server connectivity',
+  'Share all server photos post-service',
+  'Resolve all technical issues on site',
+  'Note every point in service report accurately',
+];
+const POST_CHECKS = [
+  'Remotely monitor site for 2 days post-visit',
+  'Share brief service report with support coordinators',
+  'Inform client of preventive measures going forward',
+  'Update master client database',
+  'Follow up on payment if spares supplied',
+  'Confirm site is fully live & data flowing',
+  'Report any outstanding payment issues ',
+  'Brief email sent to client with all details',
+  'Took feedback for the visit from the client',
+  
+];
+
+// ═══════════════════════════════════════════════════════════════
+// INCENTIVE CALC — per PTESPL Incentive Document v3
+// ═══════════════════════════════════════════════════════════════
+// QUARTERLY MONTHS: Aug 2026, Nov 2026, Feb 2027, May 2027 …
+const QUARTERLY_MONTHS = [2, 5, 8, 11]; // Feb, May, Aug, Nov
+
+function isQuarterlyPayoutMonth(month, year) {
+  // Quarterly payouts: Aug 2026, Nov 2026, Feb 2027, May 2027 …
+  if (year < 2026) return false;
+  if (year === 2026 && month < 8) return false;
+  return QUARTERLY_MONTHS.includes(month);
+}
+
+function calc(r){
+  const ev=+r.emergency||0, sp=+r.spares||0, oc=+r.ocems||0;
+  const bb=+r.buyback||0, ins=+r.install||0, fb=+r.feedback||0, cm=+r.cmc||0;
+  const sites=+r.sites||0; // number of eligible sites (for quarterly calc)
+  const month=+r.month||0, year=+r.year||0;
+
+  // 01 Visit Performance — QUARTERLY payout (Aug, Nov, Feb, May …)
+  // ₹250 per eligible site per quarter (site qualifies if 0 emergency visits)
+  // Monthly tracking: record visit status but payout only on quarterly months
+  // Display: show accrued credit this month, flag if it's a payout month
+  // For monthly display: ev=0 → credit ₹2000 (manager-level proxy), ev=1 → ₹1000, 2+ → ₹0
+  // Actual quarterly payout = ₹250 × eligible sites (entered in "Sites Managed" field)
+  const vMonthly = ev===0?2000:ev===1?1000:0; // monthly credit proxy
+  // Quarterly actual: ₹250 × sites if this is a payout month, else 0
+  const vQuarterly = (sites > 0 && isQuarterlyPayoutMonth(month, year)) ? (ev===0 ? sites*250 : ev===1 ? Math.floor(sites*250*0.5) : 0) : 0;
+  // v = quarterly actual if available, else monthly proxy for tracking
+  const v = vQuarterly > 0 ? vQuarterly : vMonthly;
+
+  // 02 Spare Sales — flat 1% on payment received
+  const s = sp>0 ? Math.round(sp*0.01) : 0;
+
+  // 03 New OCEMS / STP Order — 1% of sale value
+  const o = Math.round(oc*0.01);
+
+  // 04 Buyback from existing client — 0.05% of value
+  const bbc = Math.round(bb*0.0005);
+
+  // 05 Installation — ₹1,000 per installation
+  const i = ins*1000;
+
+  // 06 Feedback — 8-14 = ₹1,000 / 15+ = ₹1,500 (per month, official 150-word email)
+  const f = fb>=15?1500:fb>=8?1000:0;
+
+  // 07 CMC Efficiency — updated tiers: <50%=0, 50-69%=₹500, 70-89%=₹700, 90%+=₹1000
+  const c = cm>=90?1000:cm>=70?700:cm>=50?500:0;
+
+  return{v,s,o,bbc,i,f,c,total:v+s+o+bbc+i+f+c,
+    vMonthly, vQuarterly, isQtrMonth: isQuarterlyPayoutMonth(month,year), sites};
+}
+function fmt(n){return'₹'+Math.round(n||0).toLocaleString('en-IN')}
+
+// ═══════════════════════════════════════════════════════════════
+// GOOGLE SHEETS API
+// ═══════════════════════════════════════════════════════════════
+function setSyncStatus(status){
+  const dot=document.getElementById('syncDot');
+  const lbl=document.getElementById('syncLabel');
+  dot.className='sync-dot '+status;
+  if(status==='ok')lbl.textContent='Synced';
+  else if(status==='err')lbl.textContent='Sync error';
+  else if(status==='syncing')lbl.textContent='Syncing…';
+  else lbl.textContent='Not connected';
+}
+
+async function sheetPost(payload){
+  if(!SHEET_URL){toast('Connect Google Sheets first — go to ⚙ Setup tab','warn');return null;}
+  setSyncStatus('syncing');
+  try{
+    const res=await fetch(SHEET_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'}, // text/plain avoids CORS preflight
+      body:JSON.stringify(payload),
+      redirect:'follow'
+    });
+    const text=await res.text();
+    let json;
+    try{json=JSON.parse(text);}catch(pe){throw new Error('Invalid response from Apps Script. Make sure deployment is set to "Anyone" access.');}
+    if(json.error)throw new Error(json.error);
+    setSyncStatus('ok');
+    return json;
+  }catch(e){
+    setSyncStatus('err');
+    toast('Sync failed: '+e.message,'err');
+    return null;
+  }
+}
+
+async function loadFromSheet(){
+  if(!SHEET_URL){setSyncStatus('none');return;}
+  setSyncStatus('syncing');
+  try{
+    const res=await fetch(SHEET_URL+'?t='+Date.now(),{redirect:'follow'});
+    const text=await res.text();
+    let json;
+    try{json=JSON.parse(text);}catch(pe){throw new Error('Invalid response. Check Apps Script deployment — "Who has access" must be set to "Anyone".');}
+    if(json.error)throw new Error(json.error);
+
+    // Map flat Sheet rows back to app objects
+    DB.engineers=(json.engineers||[]).map(r=>({
+      id:r.ID, name:r.Name, eid:r.EmpID, region:r.Region, color:r.Color
+    }));
+    DB.records=(json.records||[]).map(r=>({
+      id:r.ID, engId:r.EngineerID, month:+r.Month, year:+r.Year,
+      emergency:+r.EmergencyVisits, spares:+r.SpareSalesPayment,
+      ocems:+r.OcemsValue, buyback:+r.BuybackValue||0, install:+r.Installations,
+      feedback:+r.Feedbacks, cmc:+r.CMC_Efficiency, notes:r.Notes,
+      sites:+r.SitesManaged||0
+    }));
+    DB.daily=(json.daily||[]).map(r=>({
+      id:r.ID, engId:r.EngineerID, date:r.Date, site:r.Site,
+      vtype:r.VisitType, spares:r.Spares, notes:r.Notes,
+      preChecked:parseChecked(r.PreChecks_Detail,PRE_CHECKS.length),
+      onsiteChecked:parseChecked(r.OnSiteChecks_Detail,ONSITE_CHECKS.length),
+      postChecked:parseChecked(r.PostChecks_Detail,POST_CHECKS.length),
+    }));
+    DB.sites=(json.sites||[]).map(r=>({id:r.ID,name:r.Name}));
+    setSyncStatus('ok');
+    renderDash();renderAnnual();renderLB();renderEngList();renderDailyTable();refreshDailySelects();refreshSiteDatalist();
+    toast('Data loaded from Google Sheets ✓','ok');
+  }catch(e){
+    setSyncStatus('err');
+    toast('Could not load: '+e.message,'err');
+  }
+}
+
+function parseChecked(detailStr,len){
+  if(!detailStr)return Array(len).fill(false);
+  const parts=detailStr.split(' | ');
+  return parts.map(p=>p.startsWith('✓'));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETUP / CONNECTION
+// ═══════════════════════════════════════════════════════════════
+async function connectSheet(){
+  const url=document.getElementById('sheetUrl').value.trim();
+  if(!url||!url.startsWith('https://script.google.com')){
+    document.getElementById('connectionStatus').innerHTML='<span style="color:var(--c4)">⚠ That doesn\'t look like a valid Apps Script URL. It should start with <code style="font-family:var(--f3);">https://script.google.com/macros/s/…</code></span>';
+    return;
+  }
+  SHEET_URL=url;
+  localStorage.setItem(URL_KEY,url);
+  document.getElementById('connectionStatus').innerHTML='<span style="color:var(--c3)">⏳ Testing connection — this may take 10–15 seconds on first run…</span>';
+  const r=await sheetPost({action:'init'});
+  if(r&&r.ok){
+    document.getElementById('connectionStatus').innerHTML='<span style="color:var(--c2)">✓ Connected! Google Sheets is ready. Loading data…</span>';
+    await loadFromSheet();
+  } else {
+    document.getElementById('connectionStatus').innerHTML=`<span style="color:var(--c4)">✗ Connection failed.<br>
+    • Make sure <strong>"Who has access"</strong> is set to <strong>Anyone</strong> (not "Anyone with a Google Account")<br>
+    • Make sure you created a <strong>New Deployment</strong> after pasting the script<br>
+    • Make sure you clicked <strong>Authorise / Allow</strong> when prompted<br>
+    See the troubleshooting box below for full checklist.</span>`;
+  }
+}
+function disconnectSheet(){
+  SHEET_URL='';
+  localStorage.removeItem(URL_KEY);
+  setSyncStatus('none');
+  document.getElementById('connectionStatus').innerHTML='<span style="color:var(--dim)">Disconnected.</span>';
+  toast('Disconnected from Google Sheets','warn');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  ['dm','lbm','eMon'].forEach(id=>document.getElementById(id).value=now.getMonth()+1);
+  document.getElementById('dl-date').value=now.toISOString().split('T')[0];
+  document.getElementById('dl-filter-date').value=now.toISOString().split('T')[0];
+  // Pre-fill URL input if already saved
+  if(SHEET_URL)document.getElementById('sheetUrl').value=SHEET_URL;
+  buildCheckboxes();
+  renderDash();renderAnnual();renderLB();renderEngList();renderDailyTable();
+  if(SHEET_URL)loadFromSheet();
+  else setSyncStatus('none');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE NAV
+// ═══════════════════════════════════════════════════════════════
+function goPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='annual')renderAnnual();
+  if(name==='leaderboard')renderLB();
+  if(name==='engineers')renderEngList();
+  if(name==='daily'){refreshDailySelects();renderDailyTable();}
+}
+function goPageByName(name){
+  const map={dashboard:0,annual:1,leaderboard:2,daily:3,engineers:4,setup:5};
+  const tabs=document.querySelectorAll('.tab');
+  if(map[name]!==undefined)goPage(name,tabs[map[name]]);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHECKBOXES
+// ═══════════════════════════════════════════════════════════════
+function buildCheckboxes(){
+  renderCG('pre-checks',PRE_CHECKS,'pre');
+  renderCG('onsite-checks',ONSITE_CHECKS,'onsite');
+  renderCG('post-checks',POST_CHECKS,'post');
+}
+function renderCG(id,items,pfx){
+  document.getElementById(id).innerHTML=items.map((_,i)=>`
+    <label class="check-item" id="${pfx}-item-${i}" onclick="this.classList.toggle('checked')">
+      <div class="chk-box">✓</div><span class="chk-label">${items[i]}</span>
+    </label>`).join('');
+}
+function getCheckedArr(pfx,len){
+  return Array.from({length:len},(_,i)=>{
+    const el=document.getElementById(`${pfx}-item-${i}`);
+    return el?el.classList.contains('checked'):false;
+  });
+}
+function resetCG(pfx,len){
+  for(let i=0;i<len;i++){const el=document.getElementById(`${pfx}-item-${i}`);if(el)el.classList.remove('checked');}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+function renderDash(){
+  const m=+document.getElementById('dm').value,y=+document.getElementById('dy').value;
+  const q=(document.getElementById('dsearch').value||'').toLowerCase();
+  const recs=DB.records.filter(r=>r.month===m&&r.year===y);
+  let tot=0,top='',topA=0;
+  recs.forEach(r=>{const c=calc(r);tot+=c.total;if(c.total>topA){topA=c.total;top=(DB.engineers.find(e=>e.id===r.engId)||{}).name||'—';}});
+  if(!DB.engineers.length){
+    document.getElementById('dstats').innerHTML='';
+    document.getElementById('dtbody').innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-ico">👷</div><p>No engineers yet.<br>Add engineers from the <strong>Team</strong> tab, or connect Google Sheets via <strong>⚙ Setup</strong>.</p></div></td></tr>`;
+    return;
+  }
+  document.getElementById('dstats').innerHTML=`
+    <div class="sc sc1"><div class="sc-label">Total Payout</div><div class="sc-val">${fmt(tot)}</div><div class="sc-sub">${MN[m]} ${y}</div></div>
+    <div class="sc sc2"><div class="sc-label">Logged</div><div class="sc-val">${recs.length}<span style="font-size:14px;font-weight:400"> / ${DB.engineers.length}</span></div><div class="sc-sub">engineers this month</div></div>
+    <div class="sc sc3"><div class="sc-label">Top Earner</div><div class="sc-val" style="font-size:17px;">${top||'—'}</div><div class="sc-sub">${topA?fmt(topA):'No data yet'}</div></div>
+    <div class="sc sc4"><div class="sc-label">Avg / Engineer</div><div class="sc-val">${recs.length?fmt(tot/recs.length):'₹0'}</div><div class="sc-sub">logged engineers only</div></div>
+  `;
+  const rows=DB.engineers
+    .filter(e=>!q||e.name.toLowerCase().includes(q)||e.eid.toLowerCase().includes(q)||(e.region||'').toLowerCase().includes(q))
+    .map(e=>{const rec=recs.find(r=>r.engId===e.id);return{e,rec,inc:rec?calc(rec):null};})
+    .sort((a,b)=>(b.inc?.total||0)-(a.inc?.total||0));
+  document.getElementById('dtbody').innerHTML=rows.map(({e,rec,inc},i)=>{
+    const rk=i===0?'rk1':i===1?'rk2':i===2?'rk3':'rkn';
+    if(!rec)return`<tr class="erow" onclick="openDetail('${e.id}')">
+      <td><span class="rank-b ${rk}">${i+1}</span></td>
+      <td><div class="en">${e.name}</div><div class="eid">${e.eid} · ${e.region||'—'}</div></td>
+      <td colspan="8" style="color:var(--muted);font-size:12px;">No entry for ${MN3[m]} ${y}</td>
+      <td><button class="btn btn-s" style="font-size:10px;padding:4px 10px;" onclick="event.stopPropagation();openEntryFor('${e.id}')">Log</button></td>
+    </tr>`;
+    const evp=rec.emergency==0?'pg':rec.emergency==1?'pb':rec.emergency==2?'py':'pr';
+    const cmcp=rec.cmc>=90?'pg':rec.cmc>=50?'pb':rec.cmc>=30?'py':'pr';
+    return`<tr class="erow" onclick="openDetail('${e.id}')">
+      <td><span class="rank-b ${rk}">${i+1}</span></td>
+      <td><div class="en" style="display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:50%;background:${e.color};flex-shrink:0;"></span>${e.name}</div><div class="eid">${e.eid} · ${e.region||'—'}</div></td>
+      <td><span class="pill ${evp}">${rec.emergency} emerg</span></td>
+      <td class="mono" style="color:var(--c2);font-size:12px;">${rec.spares?fmt(rec.spares):'—'}</td>
+      <td class="mono" style="color:var(--c3);font-size:12px;">${rec.ocems?fmt(rec.ocems):'—'}</td>
+      <td class="mono" style="color:var(--c5);font-size:12px;">${rec.buyback?fmt(rec.buyback):'—'}</td>
+      <td class="mono">${rec.install||0}</td><td class="mono">${rec.feedback||0}</td>
+      <td><span class="pill ${cmcp}">${rec.cmc}%</span></td>
+      <td><span class="amt" style="font-size:14px;">${fmt(inc.total)}</span></td>
+      <td><button class="btn btn-s" style="font-size:10px;padding:4px 10px;" onclick="event.stopPropagation();openEntryFor('${e.id}',${rec.month},${rec.year})">Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ANNUAL
+// ═══════════════════════════════════════════════════════════════
+function renderAnnual(){
+  const y=+document.getElementById('ay').value;
+  const recs=DB.records.filter(r=>r.year===y);
+  let grandTotal=0,bestM='',bestMV=0;
+  const monthTots=Array(13).fill(0);
+  recs.forEach(r=>{const c=calc(r);grandTotal+=c.total;monthTots[r.month]+=c.total;});
+  for(let m=1;m<=12;m++)if(monthTots[m]>bestMV){bestMV=monthTots[m];bestM=MN3[m];}
+  document.getElementById('astats').innerHTML=`
+    <div class="sc sc1"><div class="sc-label">Year Total (${y})</div><div class="sc-val">${fmt(grandTotal)}</div><div class="sc-sub">all engineers</div></div>
+    <div class="sc sc2"><div class="sc-label">Active Engineers</div><div class="sc-val">${new Set(recs.map(r=>r.engId)).size}</div><div class="sc-sub">with at least 1 entry</div></div>
+    <div class="sc sc3"><div class="sc-label">Best Month</div><div class="sc-val" style="font-size:20px;">${bestM||'—'}</div><div class="sc-sub">${bestMV?fmt(bestMV):''}</div></div>
+    <div class="sc sc4"><div class="sc-label">Avg / Month</div><div class="sc-val">${fmt(grandTotal/12)}</div><div class="sc-sub">12 months</div></div>
+  `;
+  if(!DB.engineers.length){document.getElementById('annTable').innerHTML=`<div class="empty"><div class="empty-ico">📊</div><p>No engineers added yet.</p></div>`;return;}
+  const months=Array.from({length:12},(_,i)=>i+1);
+  const maxAmt=Math.max(...DB.engineers.map(e=>months.reduce((s,m)=>{const r=recs.find(x=>x.engId===e.id&&x.month===m);return s+(r?calc(r).total:0);},0)),1);
+  let html=`<table><thead><tr><th>Engineer</th>${months.map(m=>`<th>${MN3[m]}</th>`).join('')}<th>YTD Total</th></tr></thead><tbody>`;
+  DB.engineers.forEach(e=>{
+    const ytd=months.reduce((s,m)=>{const r=recs.find(x=>x.engId===e.id&&x.month===m);return s+(r?calc(r).total:0);},0);
+    const pct=Math.round((ytd/maxAmt)*100);
+    html+=`<tr class="erow" onclick="openDetail('${e.id}')"><td class="row-name"><span style="display:inline-flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:50%;background:${e.color};flex-shrink:0;"></span>${e.name}</span><div class="eid">${e.eid}</div></td>`;
+    months.forEach(m=>{
+      const r=recs.find(x=>x.engId===e.id&&x.month===m);
+      if(!r){html+=`<td class="mono heat-0" style="font-size:11px;">—</td>`;return;}
+      const t=calc(r).total;
+      html+=`<td class="mono ${t===0?'heat-0':t<5000?'heat-1':t<15000?'heat-2':t<30000?'heat-3':'heat-4'}" style="font-size:11.5px;">${fmt(t)}</td>`;
+    });
+    html+=`<td class="row-total">${fmt(ytd)}<div style="background:var(--s3);border-radius:3px;height:4px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${e.color};border-radius:3px;"></div></div></td></tr>`;
+  });
+  html+=`<tr style="border-top:1px solid var(--border2);"><td class="row-name" style="color:var(--dim);font-size:12px;">Monthly Total</td>`;
+  months.forEach(m=>{html+=`<td class="mono" style="color:var(--dim);font-size:11px;">${monthTots[m]?fmt(monthTots[m]):'—'}</td>`;});
+  html+=`<td class="row-total" style="color:var(--c3);">${fmt(grandTotal)}</td></tr></tbody></table>`;
+  document.getElementById('annTable').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════════════════════
+function renderLB(){
+  const period=document.getElementById('lbp').value;
+  const m=+document.getElementById('lbm').value,y=+document.getElementById('lby').value;
+  let recs=DB.records;
+  if(period==='month')recs=recs.filter(r=>r.month===m&&r.year===y);
+  else if(period==='year')recs=recs.filter(r=>r.year===y);
+  const tots=DB.engineers.map(e=>{
+    const er=recs.filter(r=>r.engId===e.id);
+    const c={v:0,s:0,o:0,i:0,f:0,c:0,total:0};
+    er.forEach(r=>{const x=calc(r);Object.keys(c).forEach(k=>c[k]+=x[k]);});
+    return{e,c,months:er.length};
+  }).sort((a,b)=>b.c.total-a.c.total);
+  const maxV=tots[0]?.c.total||1;
+  const el=document.getElementById('lbList');
+  if(!DB.engineers.length||tots.every(t=>!t.c.total)){el.innerHTML=`<div class="empty"><div class="empty-ico">🏆</div><p>No data for this period yet.</p></div>`;return;}
+  el.innerHTML=tots.map(({e,c,months},i)=>{
+    const cls=i===0?'lb1':i===1?'lb2':i===2?'lb3':'';
+    return`<div class="lb-item ${cls}" onclick="openDetail('${e.id}')">
+      <div class="lb-rk ${i>2?'lb-rk-n':''}">${i+1}</div>
+      <div class="lb-av" style="background:${e.color}22;color:${e.color};border:2px solid ${e.color}55;">${e.name.charAt(0)}</div>
+      <div class="lb-inf">
+        <div class="lb-name">${e.name}</div>
+        <div class="lb-meta">${e.eid} · ${e.region||'—'} · ${months} month${months!==1?'s':''} logged</div>
+        <div class="lb-breakdown">
+          <span class="lb-chip">Visit <span>${fmt(c.v)}</span></span>
+          <span class="lb-chip">Spares <span>${fmt(c.s)}</span></span>
+          <span class="lb-chip">OCEMS <span>${fmt(c.o)}</span></span>
+          <span class="lb-chip">Buyback <span>${fmt(c.bbc||0)}</span></span>
+          <span class="lb-chip">Install <span>${fmt(c.i)}</span></span>
+          <span class="lb-chip">Fdbk <span>${fmt(c.f)}</span></span>
+          <span class="lb-chip">CMC <span>${fmt(c.c)}</span></span>
+        </div>
+      </div>
+      <div class="lb-bars"><div class="lb-bg"><div class="lb-fill ${i>2?'lb-fill-n':''}" style="width:${Math.round((c.total/maxV)*100)}%"></div></div></div>
+      <div class="lb-amt">${fmt(c.total)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SITE MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+function refreshSiteDatalist(){
+  const dl=document.getElementById('site-datalist');
+  if(!dl)return;
+  dl.innerHTML=DB.sites.map(s=>`<option value="${s.name}"></option>`).join('');
+}
+
+function openSiteManager(){
+  document.getElementById('mo-sites').classList.add('open');
+  renderSiteList();
+}
+
+function renderSiteList(){
+  const container=document.getElementById('site-list-container');
+  const count=document.getElementById('site-count');
+  const sites=DB.sites.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  count.textContent=`(${sites.length})`;
+  if(!sites.length){
+    container.innerHTML=`<div style="padding:28px;text-align:center;color:var(--muted);font-size:13px;">No sites yet. Add your first site above.</div>`;
+    return;
+  }
+  container.innerHTML=sites.map(s=>`
+    <div style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:9px 14px;">
+      <span style="flex:1;font-size:13px;">${s.name}</span>
+      <span style="font-family:var(--f3);font-size:10px;color:var(--muted);">${s.id}</span>
+      <button class="btn btn-d" style="font-size:10px;padding:3px 9px;" onclick="deleteSite('${s.id}')">Remove</button>
+    </div>`).join('');
+}
+
+async function addNewSite(){
+  if(!SHEET_URL){toast('Connect Google Sheets first — go to ⚙ Setup tab','warn');return;}
+  const input=document.getElementById('new-site-input');
+  const name=input.value.trim();
+  if(!name){toast('Enter a site name','err');return;}
+  if(DB.sites.some(s=>s.name.toLowerCase()===name.toLowerCase())){toast('Site already exists','warn');return;}
+  const site={id:'site'+Date.now(),name};
+  const r=await sheetPost({action:'saveSite',data:site});
+  if(!r)return;
+  DB.sites.push(site);
+  input.value='';
+  refreshSiteDatalist();
+  renderSiteList();
+  toast('Site added ✓','ok');
+}
+
+async function deleteSite(id){
+  if(!confirm('Remove this site from the list?'))return;
+  const r=await sheetPost({action:'deleteSite',id});
+  if(!r)return;
+  DB.sites=DB.sites.filter(s=>s.id!==id);
+  refreshSiteDatalist();
+  renderSiteList();
+  toast('Site removed','ok');
+}
+
+
+function refreshDailySelects(){
+  const opts=DB.engineers.map(e=>`<option value="${e.id}">${e.name} (${e.eid})</option>`).join('');
+  document.getElementById('dl-eng').innerHTML=DB.engineers.length?opts:'<option value="">— Add engineers first —</option>';
+  document.getElementById('dl-filter-eng').innerHTML='<option value="">All Engineers</option>'+DB.engineers.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+// ── Edit daily log state ─────────────────────────────────────
+let EDIT_LOG_ID = null;
+let CURRENT_DETAIL_LOG_ID = null;
+
+async function saveDailyLog(){
+  if(!SHEET_URL){toast('Connect Google Sheets first — go to ⚙ Setup tab','warn');return;}
+  const engId=document.getElementById('dl-eng').value;
+  const date=document.getElementById('dl-date').value;
+  const site=document.getElementById('dl-site').value.trim();
+  if(!engId){toast('Select an engineer','err');return;}
+  if(!date){toast('Select a date','err');return;}
+  if(!site){toast('Enter the site name','err');return;}
+  const eng=DB.engineers.find(e=>e.id===engId)||{};
+  const isEdit=!!EDIT_LOG_ID;
+  const log={
+    id:isEdit?EDIT_LOG_ID:('dl'+Date.now()),
+    engId, engineerName:eng.name||'', date, site,
+    vtype:document.getElementById('dl-vtype').value,
+    spares:document.getElementById('dl-spares').value.trim(),
+    notes:document.getElementById('dl-notes').value.trim(),
+    preChecked:getCheckedArr('pre',PRE_CHECKS.length),
+    onsiteChecked:getCheckedArr('onsite',ONSITE_CHECKS.length),
+    postChecked:getCheckedArr('post',POST_CHECKS.length),
+  };
+  if(isEdit){
+    const delR=await sheetPost({action:'deleteDailyLog',id:EDIT_LOG_ID});
+    if(!delR)return;
+    DB.daily=DB.daily.filter(l=>l.id!==EDIT_LOG_ID);
+  }
+  const r=await sheetPost({action:'saveDailyLog',data:log});
+  if(!r)return;
+  DB.daily.unshift(log);
+  resetDailyForm();renderDailyTable();
+  toast(isEdit?'Log updated in Google Sheets ✓':'Daily log saved to Google Sheets ✓','ok');
+}
+
+function resetDailyForm(){
+  EDIT_LOG_ID=null;
+  ['dl-site','dl-spares','dl-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('dl-vtype').value='scheduled';
+  document.getElementById('dl-date').value=new Date().toISOString().split('T')[0];
+  resetCG('pre',PRE_CHECKS.length);resetCG('onsite',ONSITE_CHECKS.length);resetCG('post',POST_CHECKS.length);
+  // Reset edit-mode UI
+  document.getElementById('dl-form-title').textContent='📋 New Daily Log Entry';
+  document.getElementById('dl-edit-banner').style.display='none';
+  document.getElementById('dl-form-card').style.borderColor='';
+  const btn=document.getElementById('dl-save-btn');
+  btn.textContent='Save to Google Sheets';btn.className='btn btn-g2';
+}
+
+function startEditDailyLog(id){
+  const l=DB.daily.find(x=>x.id===id);if(!l){toast('Log not found','err');return;}
+  EDIT_LOG_ID=id;
+  goPageByName('daily');
+  setTimeout(()=>document.getElementById('dl-form-card').scrollIntoView({behavior:'smooth',block:'start'}),80);
+  const eng=DB.engineers.find(e=>e.id===l.engId)||{name:'?'};
+  const df=l.date?new Date(l.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short'}):'?';
+  document.getElementById('dl-eng').value=l.engId;
+  document.getElementById('dl-date').value=l.date||'';
+  document.getElementById('dl-site').value=l.site||'';
+  document.getElementById('dl-vtype').value=l.vtype||'scheduled';
+  document.getElementById('dl-spares').value=l.spares||'';
+  document.getElementById('dl-notes').value=l.notes||'';
+  (l.preChecked||[]).forEach((v,i)=>{const el=document.getElementById(`pre-item-${i}`);if(el)el.classList.toggle('checked',!!v);});
+  (l.onsiteChecked||[]).forEach((v,i)=>{const el=document.getElementById(`onsite-item-${i}`);if(el)el.classList.toggle('checked',!!v);});
+  (l.postChecked||[]).forEach((v,i)=>{const el=document.getElementById(`post-item-${i}`);if(el)el.classList.toggle('checked',!!v);});
+  document.getElementById('dl-form-title').textContent=`✏️ Editing: ${eng.name} · ${df} · ${l.site}`;
+  document.getElementById('dl-edit-banner').style.display='flex';
+  document.getElementById('dl-form-card').style.borderColor='rgba(255,184,0,.4)';
+  const btn=document.getElementById('dl-save-btn');
+  btn.textContent='Update Log';btn.className='btn btn-warn';
+}
+
+function editDailyLogFromDetail(){
+  const id=CURRENT_DETAIL_LOG_ID;
+  closeM('mo-dl-detail');
+  if(id)startEditDailyLog(id);
+}
+
+function cancelDailyEdit(){resetDailyForm();toast('Edit cancelled','warn');}
+
+function renderDailyTable(){
+  const fd=document.getElementById('dl-filter-date').value;
+  const fe=document.getElementById('dl-filter-eng').value;
+  let logs=[...DB.daily];
+  if(fd)logs=logs.filter(l=>l.date===fd);
+  if(fe)logs=logs.filter(l=>l.engId===fe);
+  logs.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const tb=document.getElementById('dl-tbody');
+  if(!logs.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-ico">📋</div><p>No logs for selected filter.</p></div></td></tr>`;return;}
+  tb.innerHTML=logs.map(l=>{
+    const eng=DB.engineers.find(e=>e.id===l.engId)||{name:'Unknown',color:'#666'};
+    const preD=(l.preChecked||[]).filter(Boolean).length,preT=PRE_CHECKS.length;
+    const onD=(l.onsiteChecked||[]).filter(Boolean).length,onT=ONSITE_CHECKS.length;
+    const poD=(l.postChecked||[]).filter(Boolean).length,poT=POST_CHECKS.length;
+    const vtypePill=l.vtype==='emergency'?'pr':l.vtype==='installation'?'pp':l.vtype==='followup'?'py':'pb';
+    const df=l.date?new Date(l.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';
+    return`<tr class="erow" onclick="openDailyDetail('${l.id}')">
+      <td class="mono" style="font-size:12px;white-space:nowrap;">${df}</td>
+      <td><div class="en" style="display:flex;align-items:center;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:${eng.color};flex-shrink:0;"></span>${eng.name}</div></td>
+      <td style="font-size:12.5px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.site}</td>
+      <td><span class="pill ${vtypePill}">${VTYPES[l.vtype]||l.vtype}</span></td>
+      <td><span style="font-family:var(--f3);font-size:12px;color:${preD===preT?'var(--c2)':'var(--dim)'};">${preD}/${preT}</span></td>
+      <td><span style="font-family:var(--f3);font-size:12px;color:${onD===onT?'var(--c2)':'var(--dim)'};">${onD}/${onT}</span></td>
+      <td><span style="font-family:var(--f3);font-size:12px;color:${poD===poT?'var(--c2)':'var(--dim)'};">${poD}/${poT}</span></td>
+      <td style="font-size:12px;color:var(--dim);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.spares||'—'}</td>
+      <td style="font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.notes||'—'}</td>
+      <td style="white-space:nowrap;"><button class="btn btn-warn" style="font-size:10px;padding:3px 8px;" onclick="event.stopPropagation();startEditDailyLog('${l.id}')">✏ Edit</button> <button class="btn btn-d" style="font-size:10px;padding:3px 8px;margin-left:3px;" onclick="event.stopPropagation();deleteDailyLog('${l.id}')">Del</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteDailyLog(id){
+  if(!confirm('Delete this daily log entry?'))return;
+  const r=await sheetPost({action:'deleteDailyLog',id});
+  if(!r)return;
+  DB.daily=DB.daily.filter(l=>l.id!==id);
+  renderDailyTable();toast('Deleted','ok');
+}
+
+function openDailyDetail(id){
+  CURRENT_DETAIL_LOG_ID=id;
+  const l=DB.daily.find(x=>x.id===id);if(!l)return;
+  const eng=DB.engineers.find(e=>e.id===l.engId)||{name:'Unknown'};
+  const df=l.date?new Date(l.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}):'—';
+  document.getElementById('dld-title').textContent=l.site;
+  document.getElementById('dld-meta').textContent=`${eng.name} · ${df} · ${VTYPES[l.vtype]||l.vtype}`;
+  function tags(checks,checked){return checks.map((label,i)=>`<div class="dl-chk-tag ${checked&&checked[i]?'done':''}"><div class="dot"></div>${label}</div>`).join('');}
+  document.getElementById('dld-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+      <div class="dc"><div class="dc-l">Engineer</div><div class="dc-v" style="font-size:16px;">${eng.name}</div></div>
+      <div class="dc"><div class="dc-l">Visit Type</div><div class="dc-v" style="font-size:16px;">${VTYPES[l.vtype]||l.vtype}</div></div>
+      ${l.spares?`<div class="dc" style="grid-column:1/-1;"><div class="dc-l">Spares / Parts</div><div style="font-size:13px;margin-top:4px;">${l.spares}</div></div>`:''}
+      ${l.notes?`<div class="dc" style="grid-column:1/-1;"><div class="dc-l">Remarks</div><div style="font-size:13px;margin-top:4px;color:var(--dim);line-height:1.5;">${l.notes}</div></div>`:''}
+    </div>
+    <div style="font-family:var(--f3);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Pre-Visit (${(l.preChecked||[]).filter(Boolean).length}/${PRE_CHECKS.length})</div>
+    <div class="dl-checks-display">${tags(PRE_CHECKS,l.preChecked)}</div>
+    <div style="font-family:var(--f3);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px;">On-Site (${(l.onsiteChecked||[]).filter(Boolean).length}/${ONSITE_CHECKS.length})</div>
+    <div class="dl-checks-display">${tags(ONSITE_CHECKS,l.onsiteChecked)}</div>
+    <div style="font-family:var(--f3);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px;">Post-Visit (${(l.postChecked||[]).filter(Boolean).length}/${POST_CHECKS.length})</div>
+    <div class="dl-checks-display">${tags(POST_CHECKS,l.postChecked)}</div>
+  `;
+  document.getElementById('mo-dl-detail').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINEER TEAM
+// ═══════════════════════════════════════════════════════════════
+function renderEngList(){
+  const el=document.getElementById('engList');
+  if(!DB.engineers.length){el.innerHTML=`<div class="empty"><div class="empty-ico">👷</div><p>No engineers yet. Click <strong>+ Add Engineer</strong> to get started.</p></div>`;return;}
+  el.innerHTML=DB.engineers.map(e=>{
+    const recs=DB.records.filter(r=>r.engId===e.id);
+    const dlogs=DB.daily.filter(l=>l.engId===e.id);
+    const tot=recs.reduce((s,r)=>s+calc(r).total,0);
+    return`<div class="eli">
+      <div class="av" style="background:${e.color}22;color:${e.color};border:2px solid ${e.color}44;">${e.name.charAt(0)}</div>
+      <div class="eli-inf">
+        <div class="eli-name">${e.name}</div>
+        <div class="eli-sub">${e.eid} · ${e.region||'—'} · ${recs.length} months · ${dlogs.length} daily logs · All-time: ${fmt(tot)}</div>
+      </div>
+      <div class="eli-acts">
+        <button class="btn btn-s" style="font-size:11px;padding:5px 12px;" onclick="openDetail('${e.id}')">View</button>
+        <button class="btn btn-d" style="font-size:11px;padding:5px 12px;" onclick="delEng('${e.id}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MONTHLY ENTRY MODAL
+// ═══════════════════════════════════════════════════════════════
+function openEntry(){
+  if(!DB.engineers.length){toast('Add an engineer first','err');return;}
+  document.getElementById('eEng').innerHTML=DB.engineers.map(e=>`<option value="${e.id}">${e.name} (${e.eid})</option>`).join('');
+  document.getElementById('mo-entry').classList.add('open');
+  prefillRec();
+}
+function openEntryFor(engId,month,year){
+  openEntry();
+  document.getElementById('eEng').value=engId;
+  if(month)document.getElementById('eMon').value=month;
+  if(year)document.getElementById('eYr').value=year;
+  prefillRec();
+}
+
+// Auto-derive counts from daily logs for the chosen engineer+month/year
+function getDailyDerived(engId,m,y){
+  const prefix=`${y}-${String(m).padStart(2,'0')}`;
+  const logs=DB.daily.filter(l=>l.engId===engId&&(l.date||'').startsWith(prefix));
+  let emergency=0,install=0;
+  logs.forEach(l=>{if(l.vtype==='emergency')emergency++;if(l.vtype==='installation')install++;});
+  return{count:logs.length,emergency,install};
+}
+
+function prefillRec(){
+  const engId=document.getElementById('eEng').value;
+  const m=+document.getElementById('eMon').value,y=+document.getElementById('eYr').value;
+  const r=DB.records.find(x=>x.engId===engId&&x.month===m&&x.year===y);
+  const d=getDailyDerived(engId,m,y);
+  const notice=document.getElementById('autofill-notice');
+  if(d.count>0){
+    notice.style.display='block';
+    notice.innerHTML=`📋 <strong>${d.count} daily log${d.count!==1?'s':''} found</strong> for ${MN3[m]} ${y} → Auto-filled: <strong>${d.emergency} emergency visit${d.emergency!==1?'s':''}</strong>, <strong>${d.install} installation${d.install!==1?'s':''}</strong>. Adjust if needed before saving.`;
+  } else {
+    notice.style.display='none';
+  }
+  if(r){
+    document.getElementById('eEv').value=r.emergency>=2?2:r.emergency;
+    document.getElementById('eSp').value=r.spares||'';
+    document.getElementById('eOc').value=r.ocems||'';
+    document.getElementById('eBb').value=r.buyback||'';
+    document.getElementById('eIn').value=r.install||'';
+    document.getElementById('eFb').value=r.feedback||'';
+    document.getElementById('eCmc').value=r.cmc>=90?95:r.cmc>=70?75:r.cmc>=50?55:25;
+    document.getElementById('eSites').value=r.sites||'';
+    document.getElementById('eNt').value=r.notes||'';
+  } else {
+    ['eSp','eOc','eBb','eFb','eNt','eSites'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('eEv').value=d.emergency>=2?2:d.emergency;
+    document.getElementById('eIn').value=d.install||'';
+    document.getElementById('eCmc').value=95;
+  }
+  calcPrev();
+}
+function calcPrev(){
+  const month=+document.getElementById('eMon').value;
+  const year=+document.getElementById('eYr').value;
+  const r={
+    emergency:document.getElementById('eEv').value,
+    spares:document.getElementById('eSp').value,
+    ocems:document.getElementById('eOc').value,
+    buyback:document.getElementById('eBb').value||0,
+    install:document.getElementById('eIn').value,
+    feedback:document.getElementById('eFb').value,
+    cmc:document.getElementById('eCmc').value,
+    sites:document.getElementById('eSites').value||0,
+    month, year
+  };
+  const c=calc(r);
+  // Visit incentive label
+  const qtrLbl=document.getElementById('qtr-label');
+  if(c.isQtrMonth){
+    qtrLbl.textContent='🎉 PAYOUT MONTH — Quarterly bonus disbursed now';
+    qtrLbl.style.color='var(--c2)';
+    document.getElementById('pv1').textContent=fmt(c.v)+' (quarterly payout)';
+  } else {
+    const sitesVal=+document.getElementById('eSites').value||0;
+    const ev=+document.getElementById('eEv').value;
+    const projPayout=ev===0?(sitesVal*250):(ev===1?Math.floor(sitesVal*250*0.5):0);
+    qtrLbl.textContent=`Tracking · Next payout month: ${nextQtrMonth(month,year)}`;
+    qtrLbl.style.color='var(--c3)';
+    document.getElementById('pv1').textContent=fmt(c.vMonthly)+' credit'+
+      (projPayout>0?' (projected quarterly: '+fmt(projPayout)+')':'');
+  }
+  document.getElementById('pv2').textContent=fmt(c.s);
+  document.getElementById('pv3').textContent=fmt(c.o);
+  document.getElementById('pv4bb').textContent=fmt(c.bbc);
+  document.getElementById('pv4').textContent=fmt(c.i);
+  document.getElementById('pv5').textContent=fmt(c.f);
+  document.getElementById('pv6').textContent=fmt(c.c);
+  document.getElementById('pvt').textContent=fmt(c.total);
+}
+
+function nextQtrMonth(month, year){
+  const qm=[{m:8,y:2026},{m:11,y:2026},{m:2,y:2027},{m:5,y:2027},{m:8,y:2027},{m:11,y:2027}];
+  const mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const next=qm.find(q=>q.y>year||(q.y===year&&q.m>month));
+  return next?mn[next.m]+' '+next.y:'Aug 2026';
+}
+async function saveRec(){
+  if(!SHEET_URL){toast('Connect Google Sheets first — go to ⚙ Setup tab','warn');return;}
+  const engId=document.getElementById('eEng').value;
+  const m=+document.getElementById('eMon').value,y=+document.getElementById('eYr').value;
+  if(!engId){toast('Select an engineer','err');return;}
+  const eng=DB.engineers.find(e=>e.id===engId)||{};
+  const rec={id:'r'+Date.now(),engId,engineerName:eng.name||'',month:m,year:y,
+    emergency:+document.getElementById('eEv').value,
+    spares:+document.getElementById('eSp').value||0,
+    ocems:+document.getElementById('eOc').value||0,
+    buyback:+document.getElementById('eBb').value||0,
+    install:+document.getElementById('eIn').value||0,
+    feedback:+document.getElementById('eFb').value||0,
+    cmc:+document.getElementById('eCmc').value,
+    sites:+document.getElementById('eSites').value||0,
+    notes:document.getElementById('eNt').value};
+  const r=await sheetPost({action:'saveRecord',data:rec});
+  if(!r)return;
+  DB.records=DB.records.filter(x=>!(x.engId===engId&&x.month===m&&x.year===y));
+  DB.records.push(rec);
+  closeM('mo-entry');renderDash();renderAnnual();renderLB();renderEngList();
+  toast('Record saved to Google Sheets ✓','ok');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADD / DELETE ENGINEER
+// ═══════════════════════════════════════════════════════════════
+function openAddEng(){
+  ['nName','nEid','nReg'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mo-eng').classList.add('open');
+}
+async function saveEng(){
+  if(!SHEET_URL){toast('Connect Google Sheets first — go to ⚙ Setup tab','warn');return;}
+  const name=document.getElementById('nName').value.trim();
+  if(!name){toast('Enter a name','err');return;}
+  if(DB.engineers.length>=15){toast('Max 15 engineers','err');return;}
+  const eng={id:'e'+Date.now(),name,eid:document.getElementById('nEid').value.trim()||'—',region:document.getElementById('nReg').value.trim()||'—',color:COLS[DB.engineers.length%COLS.length]};
+  const r=await sheetPost({action:'saveEngineer',data:eng});
+  if(!r)return;
+  DB.engineers.push(eng);
+  closeM('mo-eng');renderEngList();renderDash();refreshDailySelects();
+  toast('Engineer added to Google Sheets ✓','ok');
+}
+async function delEng(id){
+  if(!confirm('Remove this engineer and ALL their records from Google Sheets? This cannot be undone.'))return;
+  const r=await sheetPost({action:'deleteEngineer',id});
+  if(!r)return;
+  DB.engineers=DB.engineers.filter(e=>e.id!==id);
+  DB.records=DB.records.filter(r=>r.engId!==id);
+  DB.daily=DB.daily.filter(l=>l.engId!==id);
+  renderEngList();renderDash();renderAnnual();renderLB();refreshDailySelects();renderDailyTable();
+  toast('Removed from Google Sheets','ok');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINEER DETAIL MODAL
+// ═══════════════════════════════════════════════════════════════
+function openDetail(engId){
+  const e=DB.engineers.find(x=>x.id===engId);if(!e)return;
+  const recs=DB.records.filter(r=>r.engId===engId).sort((a,b)=>b.year-a.year||b.month-a.month);
+  const tot=recs.reduce((s,r)=>s+calc(r).total,0);
+  const best=recs.length?Math.max(...recs.map(r=>calc(r).total)):0;
+  const avg=recs.length?Math.round(tot/recs.length):0;
+  const dlogs=DB.daily.filter(l=>l.engId===engId).length;
+  document.getElementById('det-name').textContent=e.name;
+  document.getElementById('det-meta').textContent=`${e.eid} · ${e.region||'—'}`;
+  const last6=recs.slice(0,6).reverse();
+  const maxBar=Math.max(...last6.map(r=>calc(r).total),1);
+  const barHTML=last6.map(r=>`<div class="bar-col"><div class="bar-fill" style="height:${Math.max(Math.round((calc(r).total/maxBar)*52),2)}px;background:${e.color};"></div><div class="bar-lbl">${MN3[r.month]}</div></div>`).join('');
+  const body=document.getElementById('det-body');
+  if(!recs.length){
+    body.innerHTML=`<div class="dc-grid" style="grid-template-columns:1fr 1fr;"><div class="dc"><div class="dc-l">Daily Logs</div><div class="dc-v" style="color:var(--c2);">${dlogs}</div></div><div class="dc"><div class="dc-l">Monthly Records</div><div class="dc-v" style="color:var(--dim);">0</div></div></div><div class="empty" style="padding:24px;"><p>No monthly records yet.</p></div>`;
+    document.getElementById('mo-detail').classList.add('open');return;
+  }
+  body.innerHTML=`
+    <div class="dc-grid">
+      <div class="dc"><div class="dc-l">All-Time</div><div class="dc-v" style="color:var(--c3);">${fmt(tot)}</div></div>
+      <div class="dc"><div class="dc-l">Months</div><div class="dc-v" style="color:var(--c1);">${recs.length}</div></div>
+      <div class="dc"><div class="dc-l">Monthly Avg</div><div class="dc-v" style="color:var(--c2);">${fmt(avg)}</div></div>
+      <div class="dc"><div class="dc-l">Best Month</div><div class="dc-v" style="color:var(--c5);">${fmt(best)}</div></div>
+    </div>
+    <div class="dc" style="margin-bottom:16px;grid-column:1/-1;"><div class="dc-l">Daily Site Logs</div><div class="dc-v" style="color:var(--c2);font-size:16px;">${dlogs} entries recorded</div></div>
+    <div style="font-family:var(--f3);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Recent Trend</div>
+    <div class="bar-chart">${barHTML}</div>
+    <div class="tbox" style="margin-top:14px;">
+      <table>
+        <thead><tr><th>Month</th><th>Visits</th><th>Visit ₹</th><th>Spares ₹</th><th>OCEMS ₹</th><th>Buyback ₹</th><th>Install ₹</th><th>Fdbk ₹</th><th>CMC ₹</th><th>Total</th><th></th></tr></thead>
+        <tbody>${recs.map(r=>{const c=calc(r);return`<tr>
+          <td class="mono" style="font-size:12px;">${MN3[r.month]} ${r.year}</td>
+          <td><span class="pill ${r.emergency==0?'pg':r.emergency==1?'pb':'pr'}" style="font-size:10px;">${r.emergency}</span></td>
+          <td class="mono" style="font-size:11.5px;color:var(--c1);">${fmt(c.v)}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--c2);">${fmt(c.s)}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--c3);">${fmt(c.o)}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--c5);">${fmt(c.bbc||0)}</td>
+          <td class="mono" style="font-size:11.5px;">${fmt(c.i)}</td>
+          <td class="mono" style="font-size:11.5px;">${fmt(c.f)}</td>
+          <td class="mono" style="font-size:11.5px;">${fmt(c.c)}</td>
+          <td class="mono" style="font-size:13px;font-weight:500;color:var(--c3);">${fmt(c.total)}</td>
+          <td><button class="btn btn-s" style="font-size:10px;padding:3px 9px;" onclick="openEntryFor('${e.id}',${r.month},${r.year})">Edit</button></td>
+        </tr>`;}).join('')}</tbody>
+      </table>
+    </div>`;
+  document.getElementById('mo-detail').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════════════════════════
+function exportCSV(){
+  const m=+document.getElementById('dm').value,y=+document.getElementById('dy').value;
+  const recs=DB.records.filter(r=>r.month===m&&r.year===y);
+  let csv='Engineer,EmpID,Region,EmergencyVisits,SpareSales,OCEMS,Buyback,Installs,Feedbacks,CMC%,VisitInc,SparesInc,OcemsInc,BuybackInc,InstallInc,FeedbackInc,CMCInc,TotalInc\n';
+  DB.engineers.forEach(e=>{
+    const r=recs.find(x=>x.engId===e.id);
+    if(!r){csv+=`${e.name},${e.eid},${e.region||'—'},,,,,,,,,,,,,,0\n`;return;}
+    const c=calc(r);
+    csv+=`${e.name},${e.eid},${e.region||'—'},${r.emergency},${r.spares},${r.ocems},${r.buyback||0},${r.install},${r.feedback},${r.cmc},${c.v},${c.s},${c.o},${c.bbc||0},${c.i},${c.f},${c.c},${c.total}\n`;
+  });
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`incentives_${MN3[m]}_${y}.csv`;a.click();
+}
+function exportDailyCSV(){
+  const fd=document.getElementById('dl-filter-date').value,fe=document.getElementById('dl-filter-eng').value;
+  let logs=[...DB.daily];
+  if(fd)logs=logs.filter(l=>l.date===fd);
+  if(fe)logs=logs.filter(l=>l.engId===fe);
+  let csv='Date,Engineer,EmpID,Site,VisitType,PreChecks,OnSiteChecks,PostChecks,Spares,Notes\n';
+  logs.forEach(l=>{
+    const eng=DB.engineers.find(e=>e.id===l.engId)||{name:'Unknown',eid:'—'};
+    const pD=(l.preChecked||[]).filter(Boolean).length,oD=(l.onsiteChecked||[]).filter(Boolean).length,poD=(l.postChecked||[]).filter(Boolean).length;
+    csv+=`${l.date},"${eng.name}",${eng.eid},"${l.site}",${VTYPES[l.vtype]||l.vtype},${pD}/${PRE_CHECKS.length},${oD}/${ONSITE_CHECKS.length},${poD}/${POST_CHECKS.length},"${l.spares||''}","${(l.notes||'').replace(/"/g,"'")}"\n`;
+  });
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`daily_log_${fd||'all'}.csv`;a.click();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+type+' show';
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
+});
+</script>
+</body>
+</html>
