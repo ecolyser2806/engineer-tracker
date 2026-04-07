@@ -923,7 +923,7 @@ textarea{resize:vertical;min-height:56px;width:100%;}
 // CONFIG — paste your Google Apps Script Web App URL here after setup
 // ═══════════════════════════════════════════════════════════════
 const URL_KEY = 'ecotrack_sheet_url';
-let SHEET_URL = localStorage.getItem(URL_KEY) || 'https://script.google.com/macros/s/AKfycbyEtOaM0HUu2ain8gLW2S8u3Th6e6KDa6cqINyVOHUNfirBjPU_jNxqlm4RpaD54xry/exec';
+let SHEET_URL = localStorage.getItem(URL_KEY) || 'https://script.google.com/macros/s/AKfycbzjRYTRzcooZTsHkQPesZVD2EufJT8GMAPjIGS9nTynVQl2n9EGYKpEhRqHgs8-t5CKKw/exec';
 
 // ═══════════════════════════════════════════════════════════════
 // IN-MEMORY DATA STORE (loaded from Google Sheets on startup)
@@ -1293,21 +1293,54 @@ async function sheetPost(payload){
   if(!SHEET_URL){toast('Connect Google Sheets first — go to ⚙ Setup tab','warn');return null;}
   setSyncStatus('syncing');
   try{
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+    
     const res=await fetch(SHEET_URL,{
       method:'POST',
-      headers:{'Content-Type':'text/plain'}, // text/plain avoids CORS preflight
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, // text/plain avoids CORS preflight with Apps Script
       body:JSON.stringify(payload),
-      redirect:'follow'
+      redirect:'follow',
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
+    
+    if(!res.ok){
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    
     const text=await res.text();
+    if(!text){
+      throw new Error('Empty response from server');
+    }
+    
     let json;
-    try{json=JSON.parse(text);}catch(pe){throw new Error('Invalid response from Apps Script. Make sure deployment is set to "Anyone" access.');}
-    if(json.error)throw new Error(json.error);
+    try{
+      json=JSON.parse(text);
+    }catch(pe){
+      console.error('Parse error. Response text:', text);
+      throw new Error('Invalid response from Apps Script. Make sure deployment is set to "Anyone" access.');
+    }
+    
+    if(!json.ok){
+      console.error('Server error:', json.error);
+      throw new Error(json.error || 'Unknown server error');
+    }
+    
     setSyncStatus('ok');
+    console.log('✓ Save successful:', payload.action, json);
     return json;
   }catch(e){
+    console.error('sheetPost error:', e);
     setSyncStatus('err');
-    toast('Sync failed: '+e.message,'err');
+    
+    if(e.name==='AbortError'){
+      toast('Connection timeout — retrying...','err');
+    } else if(e.message.includes('HTTP')){
+      toast('Server error: ' + e.message,'err');
+    } else {
+      toast('Sync failed: '+e.message,'err');
+    }
     return null;
   }
 }
@@ -1316,10 +1349,23 @@ async function loadFromSheet(){
   if(!SHEET_URL){setSyncStatus('none');return;}
   setSyncStatus('syncing');
   try{
-    const res=await fetch(SHEET_URL+'?t='+Date.now(),{redirect:'follow'});
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    
+    const res=await fetch(SHEET_URL+'?t='+Date.now(),{
+      redirect:'follow',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    
     const text=await res.text();
     let json;
-    try{json=JSON.parse(text);}catch(pe){throw new Error('Invalid response. Check Apps Script deployment — "Who has access" must be set to "Anyone".');}
+    try{
+      json=JSON.parse(text);
+    }catch(pe){
+      console.error('Parse error in loadFromSheet. Response:', text);
+      throw new Error('Invalid response. Check Apps Script deployment — "Who has access" must be set to "Anyone".');
+    }
     if(json.error)throw new Error(json.error);
 
     // Map flat Sheet rows back to app objects
@@ -1360,7 +1406,7 @@ async function loadFromSheet(){
       // v8 extended fields
       diagStatus:r.DiagStatus||'', diagNote:r.DiagNote||'',
       confirmedReason:r.ConfirmedReason||'', deviceTesting:r.DeviceTesting||'',
-      // v9 retick timestamps (HOD-only)
+      // v9 retick timestamps (HOD-only) — CRITICAL FIX: parse retick timestamps properly
       preRetickAt:parseTimestamps(r.PreRetick_Timestamps,PRE_CHECKS.length),
       onsiteRetickAt:parseTimestamps(r.OnsiteRetick_Timestamps,ONSITE_CHECKS.length),
       postRetickAt:parseTimestamps(r.PostRetick_Timestamps,POST_CHECKS.length),
@@ -1372,7 +1418,12 @@ async function loadFromSheet(){
     toast('Data loaded from Google Sheets ✓','ok');
   }catch(e){
     setSyncStatus('err');
-    toast('Could not load: '+e.message,'err');
+    console.error('loadFromSheet error:', e);
+    if(e.name==='AbortError'){
+      toast('Connection timeout — check internet and try again','err');
+    } else {
+      toast('Could not load: '+e.message,'err');
+    }
   }
 }
 
@@ -1384,10 +1435,24 @@ function parseChecked(detailStr,len){
   return result.slice(0,len);
 }
 function parseTimestamps(tsStr,len){
-  // Stored as pipe-separated Unix ms values e.g. "1712345678000|null|1712345690000|..."
-  if(!tsStr)return Array(len).fill(null);
-  const parts=tsStr.split('|');
-  const result=parts.map(p=>{const n=+p;return isNaN(n)||n===0?null:n;});
+  // Stored as pipe-separated Unix ms values e.g. "1712345678000|0|1712345690000|..."
+  // Guard: Google Sheets may return a bare number when only one value exists,
+  // or literal strings like 'null' / 'undefined'. Handle all cases.
+  if(tsStr===null||tsStr===undefined||tsStr==='')return Array(len).fill(null);
+  if(typeof tsStr==='number'){
+    const r=Array(len).fill(null);
+    if(tsStr>0)r[0]=tsStr;
+    return r;
+  }
+  const parts=String(tsStr).split('|');
+  const result=parts.map(p=>{
+    const s=p.trim();
+    // Empty, zero, or string 'null'/'undefined' → null
+    if(!s||s==='0'||s==='null'||s==='undefined'||s==='false')return null;
+    const n=Number(s);
+    // Valid positive number → return as-is; invalid → null
+    return(!isNaN(n)&&n>0)?n:null;
+  });
   while(result.length<len)result.push(null);
   return result.slice(0,len);
 }
@@ -1976,7 +2041,7 @@ async function addNewSite(){
   if(!name){toast('Enter a site name','err');return;}
   if(DB.sites.some(s=>s.name.toLowerCase()===name.toLowerCase())){toast('Site already exists','warn');return;}
   const site={id:'site'+Date.now(),name};
-  const r=await sheetPost({action:'saveSite',data:site});
+  const r=await sheetPost({action:'saveSite',data:{ID:site.id,Name:site.name}});
   if(!r)return;
   DB.sites.push(site);
   input.value='';
@@ -2178,7 +2243,51 @@ async function saveDailyLog(){
     if(!delR)return;
     DB.daily=DB.daily.filter(l=>l.id!==EDIT_LOG_ID);
   }
-  const r=await sheetPost({action:'saveDailyLog',data:log});
+  // Map camelCase app fields → PascalCase Google Sheet column names
+  const sheetLog={
+    ID:log.id,
+    EngineerID:log.engId,
+    EngineerName:log.engineerName,
+    Date:log.date,
+    Site:log.site,
+    VisitType:log.vtype,
+    Spares:log.spares,
+    Notes:log.notes,
+    SparesReplaced:log.sparesReplaced,
+    ContractType:log.contractType,
+    CostTravel:log.costTravel,
+    CostDA:log.costDA,
+    CostOther:log.costOther,
+    CostTotal:log.costTotal,
+    EmailLink:log.emailLink,
+    PhotoLink:log.photoLink,
+    InTime:log.inTime,
+    OutTime:log.outTime,
+    LiveEvidence:log.liveEvidence,
+    SavedAt:log.savedAt,
+    DiagStatus:log.diagStatus,
+    DiagNote:log.diagNote,
+    ConfirmedReason:log.confirmedReason,
+    DeviceTesting:log.deviceTesting,
+    ChecklistScore:log.checklistScore,
+    // Pass raw arrays for server-side serialization
+    preChecked:log.preChecked,
+    onsiteChecked:log.onsiteChecked,
+    postChecked:log.postChecked,
+    preCheckedAt:log.preCheckedAt,
+    onsiteCheckedAt:log.onsiteCheckedAt,
+    postCheckedAt:log.postCheckedAt,
+    preRetickAt:log.preRetickAt,
+    onsiteRetickAt:log.onsiteRetickAt,
+    postRetickAt:log.postRetickAt,
+    isEditedLog:log.isEditedLog,
+    emailLink:log.emailLink,
+    photoLink:log.photoLink,
+    liveEvidence:log.liveEvidence,
+    inTime:log.inTime,
+    outTime:log.outTime,
+  };
+  const r=await sheetPost({action:'saveDailyLog',data:sheetLog});
   if(!r)return;
   DB.daily.unshift(log);
   resetDailyForm();renderDailyTable();
@@ -2507,7 +2616,23 @@ async function saveRec(){
     cmc:+document.getElementById('eCmc').value,
     sites:+document.getElementById('eSites').value||0,
     notes:document.getElementById('eNt').value};
-  const r=await sheetPost({action:'saveRecord',data:rec});
+  // Map camelCase app fields → PascalCase Google Sheet column names
+  const sheetRec={
+    ID:rec.id,
+    EngineerID:rec.engId,
+    EngineerName:rec.engineerName,
+    Month:rec.month,
+    Year:rec.year,
+    EmergencyVisits:rec.emergency,
+    SpareSalesPayment:rec.spares,
+    OcemsValue:rec.ocems,
+    Installations:rec.install,
+    Feedbacks:rec.feedback,
+    CMC_Efficiency:rec.cmc,
+    SitesManaged:rec.sites,
+    Notes:rec.notes
+  };
+  const r=await sheetPost({action:'saveRecord',data:sheetRec});
   if(!r)return;
   DB.records=DB.records.filter(x=>!(x.engId===engId&&x.month===m&&x.year===y));
   DB.records.push(rec);
@@ -2555,7 +2680,7 @@ async function saveEng(){
     eng.name=name;
     eng.eid=document.getElementById('nEid').value.trim()||'—';
     eng.region=document.getElementById('nReg').value.trim()||'—';
-    const r=await sheetPost({action:'saveEngineer',data:eng});
+    const r=await sheetPost({action:'saveEngineer',data:{ID:eng.id,Name:eng.name,EmpID:eng.eid,Region:eng.region,Color:eng.color}});
     if(!r)return;
     closeM('mo-eng');renderEngList();renderDash();renderAnnual();renderLB();refreshDailySelects();
     toast('Engineer updated ✓','ok');
@@ -2563,7 +2688,7 @@ async function saveEng(){
     // ADD MODE
     if(DB.engineers.length>=15){toast('Max 15 engineers','err');return;}
     const eng={id:'e'+Date.now(),name,eid:document.getElementById('nEid').value.trim()||'—',region:document.getElementById('nReg').value.trim()||'—',color:COLS[DB.engineers.length%COLS.length]};
-    const r=await sheetPost({action:'saveEngineer',data:eng});
+    const r=await sheetPost({action:'saveEngineer',data:{ID:eng.id,Name:eng.name,EmpID:eng.eid,Region:eng.region,Color:eng.color}});
     if(!r)return;
     DB.engineers.push(eng);
     closeM('mo-eng');renderEngList();renderDash();refreshDailySelects();refreshHODSelects();
@@ -2757,7 +2882,7 @@ function hodBatchApprove(){
     const l=logs[done];
     lbl.textContent=`Approving ${done+1}/${logs.length}: ${l.site||l.id}…`;
     bar.style.width=`${Math.round((done/logs.length)*100)}%`;
-    post({action:'saveHODVerify',id:l.id,field:'HodNote',value:`AUTO-APPROVED ${new Date().toISOString().slice(0,10)} — all evidence present`}).catch(()=>{});
+    sheetPost({action:'saveHODVerify',id:l.id,field:'HodNote',value:`AUTO-APPROVED ${new Date().toISOString().slice(0,10)} — all evidence present`}).catch(()=>{});
     done++;setTimeout(processNext,180);
   };
   processNext();
@@ -2780,7 +2905,7 @@ function hodFlagMissing(){
     const reasons=hodAutoScore(l).reasons.join('; ');
     lbl.textContent=`Flagging ${done+1}/${logs.length}: ${l.site||l.id}…`;
     bar.style.width=`${Math.round((done/logs.length)*100)}%`;
-    post({action:'saveHODVerify',id:l.id,field:'HodNote',value:`FLAGGED ${new Date().toISOString().slice(0,10)}: ${reasons}`}).catch(()=>{});
+    sheetPost({action:'saveHODVerify',id:l.id,field:'HodNote',value:`FLAGGED ${new Date().toISOString().slice(0,10)}: ${reasons}`}).catch(()=>{});
     done++;setTimeout(processNext,180);
   };
   processNext();
@@ -2873,8 +2998,9 @@ function showHODDetail(engId, prefix){
               <span style="font-size:11.5px;color:${l[field]?'var(--text)':'var(--dim)'};">${label}</span>
             </label>`).join('')}
         </div>
-        <div style="margin-top:8px;">
-          <input type="text" id="hod-note-${l.id}" value="${l.hodNote||''}" placeholder="HOD remarks on this visit (optional)…" style="width:100%;font-size:12px;" onblur="hodSaveNote('${l.id}',this.value)">
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="hod-note-${l.id}" value="${l.hodNote||''}" placeholder="HOD remarks on this visit (optional)…" style="flex:1;min-width:200px;font-size:12px;" onblur="hodSaveNote('${l.id}',this.value)">
+          <button class="btn btn-g2" style="font-size:11px;padding:7px 16px;white-space:nowrap;flex-shrink:0;" onclick="hodSaveAll('${l.id}')">💾 Save HOD Verify</button>
         </div>
       </div>
     </div>`;
@@ -2882,6 +3008,14 @@ function showHODDetail(engId, prefix){
   document.getElementById('hod-visit-detail').style.display='';
   document.getElementById('hod-visit-detail').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
+// Map JS camelCase property names → exact sheet column header names
+const HOD_FIELD_MAP = {
+  hodEmailVerified:  'HodEmailVerified',
+  hodPhotoVerified:  'HodPhotoVerified',
+  hodReportVerified: 'HodReportVerified',
+  hodNote:           'HodNote',
+};
 
 function hodVerifyToggle(logId,field,labelEl){
   const l=DB.daily.find(x=>x.id===logId);if(!l)return;
@@ -2891,12 +3025,102 @@ function hodVerifyToggle(logId,field,labelEl){
   labelEl.style.background=l[field]?'rgba(0,229,160,.06)':'var(--s2)';
   labelEl.style.borderColor=l[field]?'rgba(0,229,160,.3)':'var(--border)';
   const span=labelEl.querySelector('span');if(span)span.style.color=l[field]?'var(--text)':'var(--dim)';
-  sheetPost({action:'saveHODVerify',id:logId,field,value:l[field]}).then(r=>{if(r)toast('HOD verification saved ✓','ok');});
+  // Send PascalCase column name and string 'TRUE'/'FALSE' — matches sheet column + Apps Script
+  const sheetField = HOD_FIELD_MAP[field] || field;
+  const sheetValue = l[field] ? 'TRUE' : 'FALSE';
+  sheetPost({action:'saveHODVerify',id:logId,field:sheetField,value:sheetValue})
+    .then(r=>{
+      if(r) toast('HOD verification saved ✓','ok');
+      else  toast('HOD verification sync failed — check connection','err');
+    });
 }
 function hodSaveNote(logId,note){
   const l=DB.daily.find(x=>x.id===logId);if(!l||l.hodNote===note)return;
   l.hodNote=note;
-  sheetPost({action:'saveHODVerify',id:logId,field:'hodNote',value:note}).then(r=>{if(r)toast('HOD note saved ✓','ok');});
+  sheetPost({action:'saveHODVerify',id:logId,field:'HodNote',value:note})
+    .then(r=>{
+      if(r) toast('HOD note saved ✓','ok');
+      else  toast('HOD note sync failed — check connection','err');
+    });
+}
+
+// ── Save ALL HOD verification fields for one log in one action ──────────────
+// Called by the "💾 Save HOD Verify" button — lets HOD tick all boxes first,
+// then save everything at once without relying on onblur/auto-save only.
+async function hodSaveAll(logId){
+  if(!SHEET_URL){toast('Connect Google Sheets first — go to ⚙ Setup tab','warn');return;}
+  const l=DB.daily.find(x=>x.id===logId);if(!l)return;
+  
+  // Get checkbox states from UI
+  const emailCheckbox = document.getElementById('hod-email-'+logId);
+  const photoCheckbox = document.getElementById('hod-photo-'+logId);
+  const reportCheckbox = document.getElementById('hod-report-'+logId);
+  const noteEl = document.getElementById('hod-note-'+logId);
+  
+  // Get current values
+  l.hodEmailVerified = emailCheckbox ? emailCheckbox.checked : l.hodEmailVerified;
+  l.hodPhotoVerified = photoCheckbox ? photoCheckbox.checked : l.hodPhotoVerified;
+  l.hodReportVerified = reportCheckbox ? reportCheckbox.checked : l.hodReportVerified;
+  l.hodNote = noteEl ? noteEl.value.trim() : '';
+  
+  console.log('HOD Save - Email:', l.hodEmailVerified, 'Photo:', l.hodPhotoVerified, 'Report:', l.hodReportVerified, 'Note:', l.hodNote);
+  
+  const fields=[
+    {field:'HodEmailVerified',  value:l.hodEmailVerified  ?'TRUE':'FALSE'},
+    {field:'HodPhotoVerified',  value:l.hodPhotoVerified  ?'TRUE':'FALSE'},
+    {field:'HodReportVerified', value:l.hodReportVerified ?'TRUE':'FALSE'},
+    {field:'HodNote',           value:l.hodNote},
+  ];
+  
+  // Save each field with retry logic
+  let successCount = 0;
+  let failedFields = [];
+  
+  for(const f of fields){
+    let success = false;
+    for(let attempt = 1; attempt <= 3; attempt++){
+      console.log(`Attempt ${attempt} for field ${f.field}`);
+      const res = await sheetPost({action:'saveHODVerify',id:logId,field:f.field,value:f.value});
+      if(res && res.ok){
+        success = true;
+        console.log(`✓ ${f.field} saved successfully`);
+        break;
+      }
+      if(attempt < 3){
+        await new Promise(resolve=>setTimeout(resolve,1500)); // Wait 1.5 seconds before retry
+      }
+    }
+    if(success){
+      successCount++;
+    } else {
+      failedFields.push(f.field);
+    }
+  }
+  
+  console.log(`HOD Save Results: ${successCount}/4 fields saved. Failed:`, failedFields);
+  
+  if(successCount === 4){
+    toast('✅ All HOD verifications saved to Google Sheets ✓','ok');
+    // Wait a moment then reload to confirm
+    await new Promise(resolve=>setTimeout(resolve,500));
+    await loadFromSheet();
+  } else if(successCount > 0){
+    toast(`⚠ Partially saved (${successCount}/4 fields). Failed: ${failedFields.join(', ')}. Retrying...`,'warn');
+    // Retry failed fields
+    for(const field of failedFields){
+      const f = fields.find(x=>x.field===field);
+      if(f){
+        for(let attempt = 1; attempt <= 2; attempt++){
+          const res = await sheetPost({action:'saveHODVerify',id:logId,field:f.field,value:f.value});
+          if(res && res.ok) break;
+          await new Promise(resolve=>setTimeout(resolve,1500));
+        }
+      }
+    }
+    await loadFromSheet();
+  } else {
+    toast('✗ HOD verification failed on all fields. Check: 1) Internet, 2) Apps Script URL, 3) Column names in Sheets','err');
+  }
 }
 
 function buildTickTimeline(l){
@@ -2931,6 +3155,20 @@ function buildTickTimeline(l){
 
   // Items ticked in edit but never originally ticked — late additions
   const lateItems= allData.filter(d=>d.retick&&!d.orig&&d.checked);
+  
+  // For OLD LOGS without timestamps but with checked items, show summary
+  const checkedItemsCount = allData.filter(d=>d.checked).length;
+  const hasNoTimestamps = !hasOrig && !hasRetick && checkedItemsCount > 0;
+
+  if(hasNoTimestamps){
+    const savedTime = l.savedAt ? new Date(l.savedAt).toLocaleString('en-IN', {year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    return`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;background:rgba(255,184,0,.04);border-radius:0 0 8px 8px;padding:12px 14px;">
+      <div style="font-family:var(--f3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--c3);margin-bottom:6px;">⏱ HOD Tick Audit Trail</div>
+      <div style="font-size:12.5px;color:var(--c3);font-weight:500;margin-bottom:8px;">⚠ This is a legacy log (old format) with ${checkedItemsCount} items ticked but no individual timestamps recorded.</div>
+      ${savedTime ? `<div style="font-size:11px;color:var(--dim);">📅 Log saved: ${savedTime}</div>` : ''}
+      <div style="font-size:11.5px;color:var(--dim);margin-top:4px;">✓ All ${checkedItemsCount} checklist items are marked as completed. Timestamps not available for pre-v11 logs.</div>
+    </div>`;
+  }
 
   if(!hasOrig && !hasRetick){
     return`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;background:rgba(255,92,92,.04);border-radius:0 0 8px 8px;padding:12px 14px;">
